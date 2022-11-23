@@ -115,7 +115,7 @@ void Clustering::cluster_HOTVR_SD_jets(vector<PseudoJet> pseudojets, int nevent)
    vector<PseudoJet> pseudojets_to_cluster=pseudojets;
 
 
-  bool ghost = true;
+  bool ghost = false;
   if(ghost){pseudojets_to_cluster = add_ghosts(pseudojets);}
 
   HOTVR hotvr_plugin(_beta, _z_cut, _pt_threshold, _min_r, _max_r, _rho, _subjetptmin, _mu, HOTVR::CALIKE, _alpha); // initialize plugin
@@ -164,10 +164,11 @@ void Clustering::cluster_HOTVR_SD_jets(vector<PseudoJet> pseudojets, int nevent)
 
   auto history = _clust_seq->history();
   history_file << "## Clustering history of event "<< to_string(nevent) << '\n';
-  history_file << "## history_index parent1 parent2 child" << '\n';
+  history_file << "## history_index parent1 parent2 child dij" << '\n';
   std::cout << "size of history = " << history.size() << std::endl;
   for (size_t i = 0; i < history.size(); i++) {
-    history_file << i << " " << history.at(i).parent1 << " "<< history.at(i).parent2 << " "<< history.at(i).child << '\n';
+    history_file << i << " " << history.at(i).parent1 << " "<< history.at(i).parent2 << " "<< history.at(i).child
+                 << " " << history.at(i).dij << '\n';
   }
   history_file.close();
 

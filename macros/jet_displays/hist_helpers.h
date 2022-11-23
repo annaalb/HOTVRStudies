@@ -17,7 +17,7 @@
 #include "jet_display_helpers.h"
 
 struct part{
-	uint ind;
+	uint ind; 
 	float pt;
 	float eta;
 	float phi;
@@ -29,9 +29,10 @@ struct leave{
 	int parent1;
 	int parent2;
 	int child;
+	double dij;
 };
 
-extern TString _jet_cols_fname;
+extern TString _jet_cols_fname; 
 extern uint _event;
 
 std::vector<part> GetInputParticles(TString fname);
@@ -49,7 +50,7 @@ TH2F* ClusterTwoParticles(std::vector<part>& ips, leave tl);
 
 void ClusterParticleAndCluster(std::vector<part>& ips, leave tl, std::map<int, TH2F*>& chists);
 
-void ClusterTwoClusters(leave tl, std::map<int, TH2F*>& chists);
+void ClusterTwoClusters(std::vector<part>& ips, leave tl, std::map<int, TH2F*>& chists);
 
 void CreateJet(std::vector<part>& ips, leave tl, std::map<int, TH2F*>& chists);
 
@@ -68,3 +69,17 @@ void DrawAll(std::vector<part> ips, std::map<int, TH2F*> chists);
 void PrintStep(int step, std::vector<part> ips, std::vector<leave> tree);
 
 #endif //__hist_helpers_h_
+
+
+
+
+
+
+
+
+
+
+
+
+
+
