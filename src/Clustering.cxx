@@ -116,21 +116,20 @@ void Clustering::cluster_HOTVR_SD_jets(vector<PseudoJet> pseudojets, int nevent)
    //_clust_seq = new ClusterSequence(pseudojets_to_cluster, jet_def);
 
  // cluster sequence with area
-   double ghost_maxrap = 0.0; // e.g. if particles go up to y=4
+   double ghost_maxrap = 4.0; // e.g. if particles go up to y=4
    AreaDefinition area_def(active_area_explicit_ghosts, GhostedAreaSpec(ghost_maxrap));
    _clust_seq_area = new ClusterSequenceArea(pseudojets_to_cluster, jet_def, area_def);
   //
 
+  bool store_history = false;
+  if (store_history) {
   std::cout << "event nummer "<< nevent << '\n';
-
   string string, string_history;
-
   string = "pseudojets_input_"+ to_string(nevent) +".txt";
   string_history = "history_"+ to_string(nevent) +".txt";
 
   ofstream outfile(string);
   ofstream history_file(string_history);
-  //outfile.open(string);
   outfile << "##Input pseudojets size "<< pseudojets_to_cluster.size() << " of event "<< to_string(nevent) << '\n';
   outfile << "## pseudojet_index pt eta phi" << '\n';
   for (size_t i = 0; i < pseudojets_to_cluster.size(); i++) {
@@ -145,6 +144,7 @@ void Clustering::cluster_HOTVR_SD_jets(vector<PseudoJet> pseudojets, int nevent)
     history_file << i << " " << history.at(i).parent1 << " "<< history.at(i).parent2 << " "<< history.at(i).child << '\n';
   }
   history_file.close();
+  }
 
    _hotvr_jets=hotvr_plugin.get_jets(); //HOTVR Clustering
    // _jet0_subjets_constituents = save_constituents(_hotvr_jets[0].user_info<HOTVRinfo>().subjets());
@@ -409,7 +409,7 @@ void Clustering::show_settings(){
 
 // --------------- Add Ghost GenParticles to Pseudo Jet of GenParticles ------------
 vector<PseudoJet> Clustering::add_ghosts(vector<PseudoJet> gen_in){
-  double pt, eta, phi, E, p;
+  double pt, eta, phi, p;
   TLorentzVector ghost_v4;
   for(uint i=0; i < 100; ++i){
     for(uint i_=0; i_ < 100; ++i_ ){

@@ -47,11 +47,10 @@ Hists(ctx, dirname)
   b_antitop = book<TH2F>("JetDisplay_b_antitop","Jet event display",bins,-PI,PI,bins,-PI,PI);
   W_antitop = book<TH2F>("JetDisplay_W_antitop","Jet event display",bins,-PI,PI,bins,-PI,PI);
 
-  jetpt = book<TH1F>("p_{T}", "p_{T} [GeV]", 200, 0, 2000);
-  jetmass = book<TH1F>("mass", "mass [GeV]", 100, 0, 300);
-  jeteta = book<TH1F>("eta", "#eta", 100, -6, 6);
-  jetphi = book<TH1F>("phi", "#phi", 40, -4, 4);
-
+  jetpt = book<TH1F>("p_{T}", "jet", 9, 1, 10);
+  jetmass = book<TH1F>("mass", "jet", 9, 1, 10);
+  jeteta = book<TH1F>("eta", "jet", 9, 1, 10);
+  jetphi = book<TH1F>("phi", "jet", 9, 1, 10);
 
   h_ttbargen=ctx.get_handle<TTbarGen>("ttbargen");
   h_parts=ctx.get_handle<std::vector<PseudoJet>>("parts");
@@ -60,7 +59,6 @@ Hists(ctx, dirname)
   h_rejected_cluster=ctx.get_handle<std::vector<PseudoJet>>("rejected_cluster");
   h_soft_cluster=ctx.get_handle<std::vector<PseudoJet>>("soft_cluster");
   h_rejected_subjets=ctx.get_handle<std::vector<PseudoJet>>("rejected_subjets");
-
 }
 
 void JetDisplayHists::fill(const Event & event){
@@ -133,7 +131,8 @@ void JetDisplayHists::fill(const Event & event){
   }
 
 //  std::cout << "NUmber of jets "<< jets.size() << '\n';
-  for(uint o=0;o<jets.size();o++) { // loop over jets
+  //for(uint o=0;o<jets.size();o++) { // loop over jets
+  for(uint o=0;o<10;o++) { // loop over first 10 jets
     if(jets[o].has_user_info<HOTVRinfo>()) {
       std::vector<fastjet::PseudoJet> SortedSubJets=jets[o].user_info<HOTVRinfo>().subjets();
       fatjet->Fill(jets[o].phi_std(),jets[o].eta(),jets[o].perp());
@@ -141,10 +140,10 @@ void JetDisplayHists::fill(const Event & event){
 
       //jetmass->Fill(o,mass);
     //  jetpt->Fill(o,jets[o].pt());
-      jetpt->Fill(jets[o].pt());
-      jetmass->Fill(mass);
-      jeteta->Fill(jets[o].eta());
-      jetphi->Fill(jets[o].phi_std());
+      jetpt->SetBinContent(o, jets[o].pt());
+      jetmass->SetBinContent(o, mass);
+      jeteta->SetBinContent(o, jets[o].eta());
+      jetphi->SetBinContent(o, jets[o].phi_std());
 
       if (SortedSubJets.size()>1) { // select only jets with more than one subjet
         for(uint p=0;p<SortedSubJets.size();p++) { // loop over subjets
