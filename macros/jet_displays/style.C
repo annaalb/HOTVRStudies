@@ -1,3 +1,5 @@
+#include "style.h"
+
 void SetupGlobalStyle()
 {
   // general appearance and style
@@ -46,7 +48,7 @@ void SetupGlobalStyle()
 
 }
 
-TCanvas* SetupCanvas(TString name = "canvas")
+TCanvas* SetupCanvas(TString name)
 {
   // optimised plots for including in theses or publications and documents
 
@@ -66,7 +68,7 @@ TCanvas* SetupCanvas(TString name = "canvas")
   return can;
 }
 
-TCanvas* SetupCanvas2d(TString name = "canvas")
+TCanvas* SetupCanvas2d(TString name)
 {
   // optimised plots for including in theses or publications and documents
 
@@ -142,7 +144,7 @@ double NormaliseToArea(TH1* hist)
   return area;
 }
 
-TLegend* SetupLegend(double shiftleft=0.)
+TLegend* SetupLegend(double shiftleft)
 {
   Double_t xl1=.21+shiftleft, yl1=0.65, xl2=xl1+0.3, yl2=yl1+.15;
   TLegend* leg = new TLegend(xl1,yl1,xl2,yl2, NULL,"brNDC");
@@ -155,7 +157,7 @@ TLegend* SetupLegend(double shiftleft=0.)
   return leg;
 }
 
-TLegend* SetupLegend2(double shiftleft=0.)
+TLegend* SetupLegend2(double shiftleft)
 {
   Double_t xl1=.21+shiftleft, yl1=0.62, xl2=xl1+0.3, yl2=yl1+.19;
   TLegend* leg = new TLegend(xl1,yl1,xl2,yl2, NULL,"brNDC");
@@ -239,7 +241,7 @@ void HOTVR_label()
   text1->Draw();
 }
 
-void HOTVR_label_jetdisplay(double left=0.)
+void HOTVR_label_jetdisplay(double left)
 {
   Int_t c_LGray = TColor::GetColor( "#e6e6e6" );
 
@@ -254,7 +256,7 @@ void HOTVR_label_jetdisplay(double left=0.)
   text1->Draw();
 }
 
-void Eventnumber_jetdisplay(int num, TString algo = "")
+void Eventnumber_jetdisplay(int num, TString algo)
 {
   if (num < 1) return;
 
@@ -318,3 +320,4 @@ void FlatSpectrum(TH2F* h)
   }
 
 }
+

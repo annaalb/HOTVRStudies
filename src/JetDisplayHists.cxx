@@ -1,4 +1,5 @@
 #include "UHH2/HOTVRStudies/include/JetDisplayHists.h"
+#include <math.h>
 
 using namespace std;
 using namespace uhh2;
@@ -14,20 +15,21 @@ Hists(ctx, dirname)
   //TODO if needed use vector of hists here
   //jet display
   int bins=50;
-  for(int o=0;o<50;o++) { // loop over 50 possible jets
+  for(int o=0;o<10;o++) { // loop over 10 possible jets
     TString hname3 = TString::Format("JetDisplay_jet%i_subjetmass",o);
     book<TH2F>(hname3,hname3,10,0,9,300,0,300);
     hname3 = TString::Format("JetDisplay_jet%i_subjetpT",o);
     book<TH2F>(hname3,hname3,10,0,9,300,0,3000);
-    for(int p=0;p<25;p++) { // loop over 20 possible subjets // TODO do this more elegant
+
+    for(int p=0;p<10;p++) { // loop over 10 possible subjets
       TString hname2 = TString::Format("JetDisplay_jet%i_subjet%i", o,p);
       book<TH2F>(hname2,"Jet event display",bins,-PI,PI,bins,-PI,PI);
     } // end loop over subjets
   } // end loop over 10 jets
 
-  beam = book<TH2F>("JetDisplay_beam","Jet event display",bins,-PI,PI,bins,-PI,PI);
-  radiation = book<TH2F>("JetDisplay_radiation","Jet event display",bins,-PI,PI,bins,-PI,PI);
-  hist_rejected_subjets = book<TH2F>("JetDisplay_rejected_subjets","Jet event display",bins,-PI,PI,bins,-PI,PI);
+  beam = book<TH2F>("JetDisplay_rejected_jets","HOTVR jets without subjets",bins,-PI,PI,bins,-PI,PI);
+  radiation = book<TH2F>("JetDisplay_radiation","Soft and wide angle radiation, rejected by SD veto",bins,-PI,PI,bins,-PI,PI);
+  hist_rejected_subjets = book<TH2F>("JetDisplay_rejected_subjets","Jets and subjets discarded because of pT cuts.",bins,-PI,PI,bins,-PI,PI);
   //book<TH2F>("JetDisplay","Jet event display",bins,-PI,PI,bins,-PI,PI);
   //book<TH2F>("JetDisplay1","Jet event display",bins,-PI,PI,bins,-PI,PI);
   fatjet = book<TH2F>("JetDisplay_fatjet","Jet event display",bins,-PI,PI,bins,-PI,PI);
@@ -36,21 +38,21 @@ Hists(ctx, dirname)
   pf1 = book<TH2F>("JetDisplay_pf1","Jet event display",bins,-PI,PI,bins,-PI,PI);
   pf2 = book<TH2F>("JetDisplay_pf2","Jet event display",bins,-PI,PI,bins,-PI,PI);
   pf_all = book<TH2F>("JetDisplay_pf_all","Jet event display",bins,-PI,PI,bins,-PI,PI);
-  top = book<TH2F>("JetDisplay_top","Jet event display",bins,-PI,PI,bins,-PI,PI);
   //book<TH2F>("JetDisplay_gluon","Jet event display",bins,-PI,PI,bins,-PI,PI);
   //book<TH2F>("JetDisplay_light","Jet event display",bins,-PI,PI,bins,-PI,PI);
   decay = book<TH2F>("JetDisplay_decay","Jet event display",bins,-PI,PI,bins,-PI,PI);
 
-  antitop = book<TH2F>("JetDisplay_antitop","Jet event display",bins,-PI,PI,bins,-PI,PI);
+  jetmass = book<TH1F>("Jetmass","m_{jet}",10,0,10);
+  jetpt = book<TH1F>("JetpT","jet p_{T}",10,0,10);
+  jetphi = book<TH1F>("Jetphi","jet #phi",10,0,10);
+  jeteta = book<TH1F>("Jeteta","jet #eta",10,0,10);
+
+  top = book<TH2F>("JetDisplay_top","Jet event display",bins,-PI,PI,bins,-PI,PI);
   b_top = book<TH2F>("JetDisplay_b_top","Jet event display",bins,-PI,PI,bins,-PI,PI);
   W_top = book<TH2F>("JetDisplay_W_top","Jet event display",bins,-PI,PI,bins,-PI,PI);
+  antitop = book<TH2F>("JetDisplay_antitop","Jet event display",bins,-PI,PI,bins,-PI,PI);
   b_antitop = book<TH2F>("JetDisplay_b_antitop","Jet event display",bins,-PI,PI,bins,-PI,PI);
   W_antitop = book<TH2F>("JetDisplay_W_antitop","Jet event display",bins,-PI,PI,bins,-PI,PI);
-
-  jetpt = book<TH1F>("p_{T}", "jet", 9, 1, 10);
-  jetmass = book<TH1F>("mass", "jet", 9, 1, 10);
-  jeteta = book<TH1F>("eta", "jet", 9, 1, 10);
-  jetphi = book<TH1F>("phi", "jet", 9, 1, 10);
 
   h_ttbargen=ctx.get_handle<TTbarGen>("ttbargen");
   h_parts=ctx.get_handle<std::vector<PseudoJet>>("parts");
@@ -62,12 +64,17 @@ Hists(ctx, dirname)
 }
 
 void JetDisplayHists::fill(const Event & event){
+
   //---------get all objects from event handle----------
+  cout << "Filling info for jet displays" << endl;
   const auto & ttbargen = event.get(h_ttbargen);
   const auto & parts = event.get(h_parts);
 
+  // these are the jets without subjets, i.e. which have not fulfilled the soft drop criterion
   const auto & rejected_cluster = event.get(h_rejected_cluster);
+  // soft cluster: these are the jets which got discarded by the soft drop algorithm (the softer one)
   const auto & soft_cluster = event.get(h_soft_cluster);
+  // these are the subjets rejected by the pt_sub cut, not filled at the moment
   const auto & rejected_subjets = event.get(h_rejected_subjets);
   const auto & jets = event.get(h_jets);
 
@@ -111,65 +118,83 @@ void JetDisplayHists::fill(const Event & event){
     throw runtime_error("no hadronic Top found");
   }
 
+
   //-------fill hists-----------
   for(uint y=0;y<rejected_cluster.size();y++){
     for(uint k=0; k<rejected_cluster[y].constituents().size();k++){
-      beam->Fill(rejected_cluster[y].constituents().at(k).phi_std(),rejected_cluster[y].constituents().at(k).eta(), rejected_cluster[y].constituents().at(k).perp()     );
+      double phi = rejected_cluster[y].constituents().at(k).phi_std();
+      double eta = rejected_cluster[y].constituents().at(k).eta();
+      double pt = rejected_cluster[y].constituents().at(k).pt();
+      if (pt<1.) pt = 1;
+      beam->Fill(phi, eta, pt );
     }
   }
 
   for(uint y=0;y<soft_cluster.size();y++){
     for(uint k=0;k<soft_cluster[y].constituents().size();k++){
-      radiation->Fill(soft_cluster[y].constituents().at(k).phi_std(),soft_cluster[y].constituents().at(k).eta(),soft_cluster[y].constituents().at(k).perp());
+      double phi = soft_cluster[y].constituents().at(k).phi_std();
+      double eta = soft_cluster[y].constituents().at(k).eta();
+      double pt  = soft_cluster[y].constituents().at(k).pt();
+      if (pt<1.) pt = 1;
+      radiation->Fill(phi, eta, pt);
     }
   }
 
   for(uint y=0;y<rejected_subjets.size();y++){
     for(uint k=0;k<rejected_subjets[y].constituents().size();k++){
-      hist_rejected_subjets->Fill(rejected_subjets[y].constituents().at(k).phi_std(),rejected_subjets[y].constituents().at(k).eta(),rejected_subjets[y].constituents().at(k).perp());
+      double phi = rejected_subjets[y].constituents().at(k).phi_std();
+      double eta = rejected_subjets[y].constituents().at(k).eta();
+      double pt  = rejected_subjets[y].constituents().at(k).pt();
+      if (pt<1.) pt = 1;
+      hist_rejected_subjets->Fill(phi, eta, pt);
     }
   }
 
-//  std::cout << "NUmber of jets "<< jets.size() << '\n';
-  //for(uint o=0;o<jets.size();o++) { // loop over jets
-  for(uint o=0;o<10;o++) { // loop over first 10 jets
+  uint Njets = jets.size();
+  if (Njets>10){
+    Njets = 10;
+  }
+  for(uint o=0;o<Njets;o++) { // loop over jets
+
     if(jets[o].has_user_info<HOTVRinfo>()) {
       std::vector<fastjet::PseudoJet> SortedSubJets=jets[o].user_info<HOTVRinfo>().subjets();
-      fatjet->Fill(jets[o].phi_std(),jets[o].eta(),jets[o].perp());
-      double mass=sqrt(jets[o].m2());
+      fatjet->Fill(jets[o].phi_std(),jets[o].eta(),jets[o].pt());
 
-      //jetmass->Fill(o,mass);
-    //  jetpt->Fill(o,jets[o].pt());
-      jetpt->SetBinContent(o, jets[o].pt());
-      jetmass->SetBinContent(o, mass);
-      jeteta->SetBinContent(o, jets[o].eta());
-      jetphi->SetBinContent(o, jets[o].phi_std());
+      jetmass->SetBinContent(o+1,jets[o].m());
+      jetpt->SetBinContent(o+1,jets[o].pt());
+      jetphi->SetBinContent(o+1,jets[o].phi());
+      jeteta->SetBinContent(o+1,jets[o].eta());
 
       if (SortedSubJets.size()>1) { // select only jets with more than one subjet
-        for(uint p=0;p<SortedSubJets.size();p++) { // loop over subjets
+        uint Nsubjets = SortedSubJets.size();
+        if (Nsubjets>10){
+          Nsubjets = 10;
+        }
+        for(uint p=0;p<Nsubjets;p++) { // loop over subjets
           TString hname3 = TString::Format("JetDisplay_jet%i_subjetmass",o);
           hist(hname3)->Fill(p,SortedSubJets.at(p).m());
           hname3 = TString::Format("JetDisplay_jet%i_subjetpT",o);
           hist(hname3)->Fill(p,SortedSubJets.at(p).pt());
           TString hname2 = TString::Format("JetDisplay_jet%i_subjet%i", o,p);
-        //  std::cout << "const size = " << SortedSubJets.at(p).constituents().size() << '\n';
-          for(uint h=0;h<SortedSubJets.at(p).constituents().size();h++)
-           {
-             double pt_const = SortedSubJets.at(p).constituents().at(h).perp();
-             if (pt_const<1e-50) {
-               pt_const=0.999;
-             }
-             ((TH2D*)hist(hname2))->Fill(SortedSubJets.at(p).constituents().at(h).phi_std(),SortedSubJets.at(p).constituents().at(h).eta(),pt_const );
-        //  std::cout << "constituents pt = " <<SortedSubJets.at(p).constituents().at(h).perp() << '\n';
-        //  std::cout << "set to pt = " << pt_const << '\n';
+
+          for(uint h=0;h<SortedSubJets.at(p).constituents().size();h++){
+            double phi = SortedSubJets.at(p).constituents().at(h).phi_std();
+            double eta = SortedSubJets.at(p).constituents().at(h).eta();
+            double pt  = SortedSubJets.at(p).constituents().at(h).pt();
+            if (pt<1.) pt = 1;
+            ((TH2D*)hist(hname2))->Fill(phi, eta, pt);
           }
         } // end loop over subjets
       }
     }
     for(uint h=0;h<jets[o].constituents().size();h++) { // loop over jet constituents
-      if(o==0) pf0->Fill(jets[o].constituents().at(h).phi_std(),jets[o].constituents().at(h).eta(),jets[o].constituents().at(h).perp());
-      if(o==1) pf1->Fill(jets[o].constituents().at(h).phi_std(),jets[o].constituents().at(h).eta(),jets[o].constituents().at(h).perp());
-      if(o==2) pf2->Fill(jets[o].constituents().at(h).phi_std(),jets[o].constituents().at(h).eta(),jets[o].constituents().at(h).perp());
+      double phi = jets[o].constituents().at(h).phi_std();
+      double eta = jets[o].constituents().at(h).eta();
+      double pt  = jets[o].constituents().at(h).pt();
+      if (pt<1.) pt = 1;
+      if(o==0) pf0->Fill(phi, eta, pt);
+      if(o==1) pf1->Fill(phi, eta, pt);
+      if(o==2) pf2->Fill(phi, eta, pt);
 
     } // end loop over jet constituents
   } // end loop over jets
@@ -184,6 +209,7 @@ void JetDisplayHists::fill(const Event & event){
       W_top->Fill(W_Top[o].phi(),W_Top[o].eta(),W_Top[o].pt());
     }
     b_top->Fill(b_Top.phi(),b_Top.eta(),b_Top.pt());
+
   }
   // same for anti top
   for(uint j=0; j< Had_AntiTops.size();j++){
@@ -196,8 +222,14 @@ void JetDisplayHists::fill(const Event & event){
     }
     b_antitop->Fill(b_AntiTop.phi(),b_AntiTop.eta(),b_AntiTop.pt());
   }
-  // ------fill hists with stable genparticles-------
-  for(uint o=0;o<parts.size();o++) pf_all->Fill(parts[o].phi_std(),parts[o].eta(),parts[o].pt());
+
+  for(uint o=0;o<parts.size();o++){
+    double phi = parts[o].phi_std();
+    double eta = parts[o].eta();
+    double pt  = parts[o].pt();
+    //if (pt<1.) pt = 1;
+    pf_all->Fill(phi, eta, pt);
+  }
 
 } // end fill function
 

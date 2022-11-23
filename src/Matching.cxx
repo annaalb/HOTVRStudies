@@ -214,7 +214,7 @@ void Matching::set_stable_particles(vector<GenParticle>* genparticles)
 	    {
 	      GenParticle* part = &(genparticles->at(i));
 	      if (IsStableParticle(part) && !IsNeutrino(part)){
-		_stableParticles.push_back(convert_particle(part));
+		      _stableParticles.push_back(convert_particle(part));
 	      }
 	    }
 }
@@ -579,4 +579,14 @@ bool Matching::IsMatched(fastjet::PseudoJet jet, double matching_radius, fastjet
   delta_R=jet.delta_R(denominator_jet);
   if(delta_R<matching_radius) return true;
   else return false;
+}
+// reset all the info, clear vectors
+void Matching::Reset(){
+  _stableParticles.clear();
+  _partons_to_cluster.clear();
+  _matched_jets.clear();
+  _matched_parton_jets.clear();
+  _matched_pairs.clear();
+  _matched_pseudojets.clear();
+  _matched_pseudojets_and_constituents.clear();
 }

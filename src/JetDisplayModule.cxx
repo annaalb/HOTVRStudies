@@ -140,14 +140,17 @@ JetDisplayModule::JetDisplayModule(Context & ctx){
 ██      ██   ██  ██████   ██████ ███████ ███████ ███████
 */
 bool JetDisplayModule::process(Event & event) {
-  std::cout << "--------start process--------" << '\n';
+
+  std::cout << "--------start processing event--------" << '\n';
+  std::cout << "Nevent = " << nevent << std::endl;
+
   if (nevent<10) {
-// here define genparticles and read from event
+  // here define genparticles and read from event
   auto genparticles = event.genparticles;
   //genprinter->process(event);
 
   if(isTTbar){
-  ttgenprod->process(event);
+    ttgenprod->process(event);
   }
 
   const auto & ttbargen = event.get(h_ttbargen);
@@ -161,9 +164,12 @@ bool JetDisplayModule::process(Event & event) {
   matching->set_stable_particles(genparticles);
   parts = matching->get_stableParticles();
 
+  std::cout << "parts in the event = " << parts.size() << std::endl;
+
 //CLUSTERING -> clusters jets depending on the algorithm that is chosen
   clustering->cluster_jets(parts, nevent); // cluster the pseudojets, possible modes defined in hotvr.config: "HOTVR, HOTVR_SD, VR"
 
+  // here are our HOTVR jets with subjets
   hotvr_jets = clustering->get_hotvr_jets();
   // get the rejected subjets
   rejected_subjets = clustering->get_rejected_subjets();
@@ -186,6 +192,7 @@ bool JetDisplayModule::process(Event & event) {
   //   }
   //   //if (hotvr_jets[k].user_info<HOTVRinfo>().nsubjets() > 1){++hotvr_jets_with_subjets;}
   // }
+
   // if (hotvr_jets_with_subjets>9) {
   //   select_event=false;
   // }
@@ -204,10 +211,26 @@ bool JetDisplayModule::process(Event & event) {
     else if (nevent==9) { hist_jet_display_09->fill(event);}
     ++nevent;
   }
-  // delete clustering infos
+
+  // some couts to see what the jets look like
+  cout << "Number of HOTVR jets = " << hotvr_jets.size() << endl;
+  for (uint i=0; i<hotvr_jets.size(); ++i){
+    cout << "jet " << i << " : " << endl;
+    cout << "pt = " << hotvr_jets.at(i).pt() << " mass = " << hotvr_jets.at(i).m() << endl;
+    std::vector<fastjet::PseudoJet> subjets = hotvr_jets.at(i).user_info<HOTVRinfo>().subjets();
+    cout << "Nsubjets = " << subjets.size() << endl;
+    for (uint j=0; j<subjets.size(); ++j){
+      cout << "   subjet " << j << " : " << " pt = " << subjets.at(j).pt() << "  m = " << subjets.at(j).m() << endl;
+    }
+  }
+
+  // delete clustering infos and clear input particles
   clustering->Reset();
-} // end if nevent <10
-// decide whether or not to keep the current event in the output:
+  matching->Reset();
+
+  } // end if nevent < 10
+
+  // decide whether or not to keep the current event in the output:
   return true;
 }
 
