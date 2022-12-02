@@ -18,15 +18,17 @@ int main()
 {
     gROOT->SetBatch(true);
 
-    std::vector<TString> prefixes;
-    prefixes.push_back(TString("example"));
+    std::vector<TString> prefixes; 
+    //prefixes.push_back(TString("history_rho"));
+    //prefixes.push_back(TString("history_fancy"));
+    prefixes.push_back(TString("history_ghosts"));
     //prefixes.push_back(TString("fancy_R_pt_protection_for_ghosts"));
     //prefixes.push_back(TString("fancyR_wo_turnon_fix_mass"));
     //prefixes.push_back(TString("fancyR_with_turnon_beta0"));
     //prefixes.push_back(TString("fancyR_with_turnon_grooming_fix_mass"));
     //prefixes.push_back(TString("fancyR_with_turnon"));
     //prefixes.push_back(TString("fancyR_with_turnon_R0_1"));
-    //prefixes.push_back(TString("fancyR_with_turnon_no_grooming"));
+    //prefixes.push_back(TString("fancyR_with_turnon_no_grooming"));    
 
     for (int i=0; i<prefixes.size(); ++i){
       do_displays(prefixes[i]);
@@ -45,16 +47,16 @@ void do_displays(TString prefix)
     // high resolution, high pt
     //   TFile* file = new TFile("JetDisplayCycle.MC.TTbarEff_gen_tight_selection_highres_highpt.root", "READ");
     //TFile* file = new TFile("JetDisplayCycle.MC.TTbarEff_gen_softdrop.root", "READ");
-
+    
     //TFile* file = new TFile("files/HOTVR_SD_fancy_R/uhh2.AnalysisModuleRunner.MC.ttbar_pythia8_flat_nnpdf23.root", "READ");
 
     TString fname = TString("files/") + prefix + TString("/uhh2.AnalysisModuleRunner.MC.ttbar_pythia8_flat_nnpdf23.root");
     std::cout << "file name = " << fname << std::endl;
     TFile* file = new TFile(fname, "READ");
-    //TFile* file = new TFile("files/debug_fancyR/fancyR_with_turnon_no_grooming/uhh2.AnalysisModuleRunner.MC.ttbar_pythia8_flat_nnpdf23.root", "READ");
+    //TFile* file = new TFile("files/debug_fancyR/fancyR_with_turnon_no_grooming/uhh2.AnalysisModuleRunner.MC.ttbar_pythia8_flat_nnpdf23.root", "READ");    
     //TFile* file = new TFile("files/new_uhh2.AnalysisModuleRunner.MC.ttbar_pythia8_flat_nnpdf23.root", "READ");
     // high resolution, low pt
-    //TFile* file = new TFile("JetDisplayCycle.MC.TTbarEff_gen_tight_selection_highres2.root", "READ");
+    //TFile* file = new TFile("JetDisplayCycle.MC.TTbarEff_gen_tight_selection_highres2.root", "READ");    
 
   	// loop over directories in file and plot jets for each directory
   	// (each holds one event)
@@ -72,7 +74,7 @@ void do_displays(TString prefix)
         if (name.Contains("JetDisplay")) dirs.push_back(name);
       }
     }
-
+	
     // before plotting: delete ROOT's random number generator
     gRandom = NULL;
 	  for (Int_t i=0; i<dirs.size(); ++i){
@@ -88,12 +90,13 @@ void do_displays(TString prefix)
         TString fname = file->GetName();
         if (fname.Contains("no_grooming")){
           std::cout << "\nPlot only large jets without subjets (no grooming case)." << std::endl;
-          jet_display_hotvr(file, dirs[i], prefix, num, true);
+          jet_display_hotvr(file, dirs[i], prefix, num, true); 
         } else {
           std::cout << "\nPlot large jets with subjets (grooming case)" << std::endl;
-          jet_display_hotvr(file, dirs[i], prefix, num, false);
+          jet_display_hotvr(file, dirs[i], prefix, num, false); 
         }
       }
 	  }
 
 }
+

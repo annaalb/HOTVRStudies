@@ -40,19 +40,22 @@ std::vector<part> GetInputParticles(TString fname);
 std::vector<leave> GetHistoryTree(TString fname);
 
 void PlotAxes();
-void PlotPart(part p);
 
-void PlotInputParts(std::vector<part> ips);
+void PlotPart(part p, int color=0);
 
-void DoClusteringStep(int step, std::vector<part>& ips, std::vector<leave> tree, std::map<int, TH2F*>& chists);
+void PlotInputParts(std::vector<part> ips, int color=0);
 
-TH2F* ClusterTwoParticles(std::vector<part>& ips, leave tl);
+bool DoClusteringStep(int step, std::vector<part>& ips, std::vector<leave> tree, std::map<int, TH2F*>& chists);
 
-void ClusterParticleAndCluster(std::vector<part>& ips, leave tl, std::map<int, TH2F*>& chists);
+bool ClusterTwoParticles(std::vector<part>& ips, leave tl, std::map<int, TH2F*>& chists);
 
-void ClusterTwoClusters(std::vector<part>& ips, leave tl, std::map<int, TH2F*>& chists);
+bool ClusterParticleAndCluster(std::vector<part>& ips, leave tl, std::map<int, TH2F*>& chists);
 
-void CreateJet(std::vector<part>& ips, leave tl, std::map<int, TH2F*>& chists);
+bool ClusterTwoClusters(std::vector<part>& ips, leave tl, std::map<int, TH2F*>& chists);
+
+bool CreateJet(std::vector<part>& ips, leave tl, std::map<int, TH2F*>& chists);
+
+void UpdateParticleColors(int ch, std::vector<part>& ips, std::vector<leave> tree, std::map<int, TH2F*> chists, int col=0);
 
 Int_t GetNextColor();
 

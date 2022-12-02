@@ -90,12 +90,19 @@ void PlotAxes()
 	h->Draw();
 }
 
-void PlotPart(part p)
-{
+void PlotPart(part p, int color)
+{	
+	// do not plot ghosts
+	if (p.pt<1e-10) return;
+
 	TGraph* g = new TGraph(1); 
 	g->SetPoint(0, p.phi, p.eta); 
 	g->SetMarkerStyle(20);
-	g->SetMarkerColor(p.color); 		
+	if (color!=0){
+		g->SetMarkerColor(color); 				
+	} else {
+		g->SetMarkerColor(p.color); 		
+	}
 	double size = 0.4;
 	double x = TMath::Log(p.pt);
 	if (x>0) size += 0.2*x; // minimum size of 0.4, then increase with log(pt)
@@ -104,14 +111,18 @@ void PlotPart(part p)
 	g->Delete();
 }
 
-void PlotInputParts(std::vector<part> ips)
+void PlotInputParts(std::vector<part> ips, int color)
 {
 	// convert ips to graphs with different marker sizes (depending on pT)
 	// and plot these on the current pad
 
 	for (int i=0; i<ips.size(); ++i){
-		//std::cout << "Plotting part " << i << " with color " << ips[i].color << std::endl;
-		PlotPart(ips[i]);
+		if ((ips[i].pt>1e-10) && (ips[i].color==kGray)){
+			std::cout << "Plotting part " << i << " with pt = " << ips[i].pt << " and color gray: " << ips[i].color << std::endl;
+			std::cout << "Should not happen! Please check." << std::endl;
+			exit(0);
+		}
+		PlotPart(ips[i], color);
 	}
 
 } 
@@ -128,7 +139,7 @@ void UpdateColors(std::vector<part>& ips, int oldc, int newc)
 
 }
 
-void DoClusteringStep(int step, std::vector<part>& ips, std::vector<leave> tree, std::map<int, TH2F*>& chists)
+bool DoClusteringStep(int step, std::vector<part>& ips, std::vector<leave> tree, std::map<int, TH2F*>& chists)
 {
 	// plot one step: check entry in history. start with Np (funny 0-counting in c++)
     // for each history entry: look up in the list of input particles which particles are combined 
@@ -137,8 +148,7 @@ void DoClusteringStep(int step, std::vector<part>& ips, std::vector<leave> tree,
     // if there appears an entry in the history which has an ID >= Np (equal sign important), then check 
     // the map with histograms. Either combine a particle with an existing histogram, 
     // or combine two histograms (need two different functions for this)
-
-    // todo: check if one parent becomes a negative number. then dib was smallest and the cluster became a jet. 
+    // if one parent becomes a negative number, then dib was smallest and the cluster became a jet. 
 
 	using namespace std;
 
@@ -149,7 +159,8 @@ void DoClusteringStep(int step, std::vector<part>& ips, std::vector<leave> tree,
 	// get the current place in the history
 	leave tl = tree[ch]; 
 
-	cout << "ch = " << ch << " parent1 = " << tl.parent1 << " parent2 = " << tl.parent2 << endl;
+	cout << "ch = " << ch << " istep = " << step 
+	     << " parent1 = " << tl.parent1 << " parent2 = " << tl.parent2 << endl;
 
 	// get the clusters we want to combine. three possibilities: 
 	// (1) both are input particles, 
@@ -187,15 +198,14 @@ void DoClusteringStep(int step, std::vector<part>& ips, std::vector<leave> tree,
       comb = CC;	
     } 
 
+    bool draw = true;
 
     switch (comb){
       case PP: {
       	cout << "clustering two particles" << endl;
       	// this is the easy case: we need to create a new histogram 
       	// which shows the clustering of these two
-      	TH2F* combohist = ClusterTwoParticles(ips, tl);
-      	// store combination in the map, with the child as unique index
-      	chists[tl.ind] = combohist; 
+      	draw = ClusterTwoParticles(ips, tl, chists);
       	break;
       }
 
@@ -203,7 +213,10 @@ void DoClusteringStep(int step, std::vector<part>& ips, std::vector<leave> tree,
       	cout << "clustering a particle and a cluster" << endl;
       	// here, we will combine the particle with the histogram of the cluster. 
       	// always take the color of the histogram 
-      	ClusterParticleAndCluster(ips, tl, chists);
+      	draw = ClusterParticleAndCluster(ips, tl, chists);
+      	if (draw){
+      		UpdateParticleColors(ch, ips, tree, chists);
+      	}
       	break;
       }
 
@@ -211,33 +224,57 @@ void DoClusteringStep(int step, std::vector<part>& ips, std::vector<leave> tree,
       	cout << "clustering two clusters" << endl;
       	// now, let's combine two histograms. the color should be the one 
       	// with the larger number (this cluster has seen larger dij values)
-      	ClusterTwoClusters(ips, tl, chists);
+      	draw = ClusterTwoClusters(ips, tl, chists);
+      	if (draw){
+      		UpdateParticleColors(ch, ips, tree, chists);
+      	}
       	break;
       }
 
   	  case JET: {
   	  	cout << "This cluster becomes a jet" << endl;
   	  	// create a jet by giving this a new color, chosen from the jet color profile
-  	  	CreateJet(ips, tl, chists);
+  	  	draw = CreateJet(ips, tl, chists);
+      	if (draw){
+      		UpdateParticleColors(ch, ips, tree, chists);
+      	}
   	  	break;
       }
 
     }
 
+    return draw;
+
 }
 
-TH2F* ClusterTwoParticles(std::vector<part>& ips, leave tl)
+bool ClusterTwoParticles(std::vector<part>& ips, leave tl, std::map<int, TH2F*>& chists)
 {
 	// first: get the two particles we cluster and color them
     part p1 = ips[tl.parent1];
     part p2 = ips[tl.parent2];
-    Int_t color = GetNextColor();
-    p1.color = color;
-    p2.color = color;
+    Int_t pcolor, ccolor;
+    bool draw = true;
+    // first, let's decide if we got two ghosts. if this is the case, 
+    // then assign the color "white = 0" to the combination
+    // this will not be plotted later on.
+    if (p1.pt<1e-10 && p2.pt<1e-10){
+    	pcolor = 0;
+    	ccolor = 0;
+    	draw = false;
+    } else if ((p1.pt<1e-10) || (p2.pt<1e-10)) { // one of the particles is a ghost
+    	pcolor = kBlack;
+    	ccolor = kGray;
+    	draw = false;
+    } else {
+    	ccolor = GetNextColor();
+    	pcolor = ccolor;
+    }
+    p1.color = pcolor;
+    p2.color = pcolor;
 
 	// make sure to store the changes (only the color) in the list of inputs
-    ips[tl.parent1].color = color;
-    ips[tl.parent2].color = color;
+    ips[tl.parent1].color = pcolor;
+    ips[tl.parent2].color = pcolor;
 
     //cout << "p1.phi = " << p1.phi << " p1.eta = " << p1.eta << endl;
     //cout << "p2.phi = " << p1.phi << " p2.eta = " << p2.eta << endl;  
@@ -250,14 +287,17 @@ TH2F* ClusterTwoParticles(std::vector<part>& ips, leave tl)
 	h->Fill(p2.phi, p2.eta);
 	CreateContour(h);
 	FixHistForContour(h);
-	h->SetFillColor(color);
-	h->SetLineColor(color);
+	h->SetFillColor(ccolor);
+	h->SetLineColor(ccolor);
 
-	return h;
+    // store combination in the map, with the child as unique index
+    chists[tl.ind] = h; 	
+
+	return draw;
 
 }
 
-void ClusterParticleAndCluster(std::vector<part>& ips, leave tl, std::map<int, TH2F*>& chists)
+bool ClusterParticleAndCluster(std::vector<part>& ips, leave tl, std::map<int, TH2F*>& chists)
 {
 	// let's find out which one is the particle, and which one the cluster
 	TH2F* cluster; 
@@ -281,8 +321,40 @@ void ClusterParticleAndCluster(std::vector<part>& ips, leave tl, std::map<int, T
 		std::cout << "ERROR in ClusterParticleAndCluster! parent 1: " << tl.parent1 << " parent 2:" << tl.parent2 << std::endl;
 	}
 
+	bool draw = true;
+
 	// now add the particle to the cluster
-	p.color = cluster->GetFillColor();
+	// need to define the color on the different cases: ghost/ghost, ghost/particle or particle/particle
+	Int_t color = cluster->GetFillColor();
+	if (p.pt<1e-10){ 
+		p.color = 0;
+		draw = false;
+		//std::cout << "ClusterParticleAndCluster: the particle is a ghost. color = " << color << std::endl;
+	}
+
+	// both are ghosts
+	if ((color==0) && (p.color==0)){ 
+		//std::cout << "ClusterParticleAndCluster: both are ghosts. color = " << color << std::endl;
+		draw = false;
+	}
+
+	// cluster is ghost-only, but we combine it with a real particle: should get a color
+	if ((color==0) && (p.color!=0)){
+		color = GetNextColor();
+		//std::cout << "ClusterParticleAndCluster: cluster is ghost, but particle is real. color = " << color << std::endl;
+		draw = false;
+	} 
+
+	// the cluster is a combination of a particle and a ghost, but should be combined with a real particle -> give the combo a good color
+	if ((color==kGray) && (p.pt>1e-10)){
+		color = GetNextColor();
+		//std::cout << "ClusterParticleAndCluster: cluster is ghost+particle, and particle is real. color = " << color << std::endl;
+	}
+	//std::cout << "ClusterParticleAndCluster: color = " << color << std::endl;
+
+	p.color = color; 
+	cluster->SetFillColor(color);
+	cluster->SetLineColor(color);
 	cluster->Fill(p.phi, p.eta);
 	CreateContour(cluster);
 	FixHistForContour(cluster);
@@ -299,11 +371,11 @@ void ClusterParticleAndCluster(std::vector<part>& ips, leave tl, std::map<int, T
 	// store the particle color in the list of input particles
 	ips[pid].color = p.color; 
     
-    return;
+    return draw;
 }
 
 
-void ClusterTwoClusters(std::vector<part>& ips, leave tl, std::map<int, TH2F*>& chists)
+bool ClusterTwoClusters(std::vector<part>& ips, leave tl, std::map<int, TH2F*>& chists)
 {
 	// let's get the clusters
 	TH2F* cluster1; 
@@ -311,6 +383,9 @@ void ClusterTwoClusters(std::vector<part>& ips, leave tl, std::map<int, TH2F*>& 
 
 	cluster1 = chists[tl.parent1];
 	cluster2 = chists[tl.parent2];
+
+	// don't draw it if we only add ghost-clusters
+	bool draw = true;
 
 	// decide on a color
 	Int_t col1 = cluster1->GetFillColor();
@@ -323,7 +398,8 @@ void ClusterTwoClusters(std::vector<part>& ips, leave tl, std::map<int, TH2F*>& 
 	} else {
 		colnew = col2;
 		colold = col1;
-	}
+	} 
+	if ((colnew==0) && (colold==0)) draw = false;
 
 	// merge the two into one
 	cluster1->Add(cluster2); 
@@ -344,10 +420,10 @@ void ClusterTwoClusters(std::vector<part>& ips, leave tl, std::map<int, TH2F*>& 
     // update all particles to have the new color
     UpdateColors(ips, colold, colnew);
 
-    return;
+    return draw;
 }
 
-void CreateJet(std::vector<part>& ips, leave tl, std::map<int, TH2F*>& chists)
+bool CreateJet(std::vector<part>& ips, leave tl, std::map<int, TH2F*>& chists)
 {
 
 	// decide on a color
@@ -356,14 +432,23 @@ void CreateJet(std::vector<part>& ips, leave tl, std::map<int, TH2F*>& chists)
 	TString jname = TString::Format("JET_%d", tl.ind);
 	std::cout << "Creating jet " << jname << "." << std::endl;
 
+	// don't draw ghost-only jets
+	bool draw = true;
+
 	// first check if it's a special case, where a single input particle became a jet
 	uint Np = ips.size();
     int pa1 = tl.parent1;
 
     if (pa1 < Np){
+
     	// create a histogram for this single-particle jet
-	    ips[tl.parent1].color = col; // store the new color of this particle
     	part p = ips[tl.parent1];
+
+    	// do nothing if the particle is a ghost
+    	if (p.pt<1e-10){
+    		draw = false;
+    		return draw;
+    	}
 
     	// create a histogram for this jet
     	TH2F* h = new TH2F(jname, "", 50, -M_PI, M_PI, 50, -M_PI, M_PI);
@@ -374,8 +459,9 @@ void CreateJet(std::vector<part>& ips, leave tl, std::map<int, TH2F*>& chists)
 		col = GetJetColor(h);
 		h->SetFillColor(col);
 		h->SetLineColor(col);
-		chists[tl.ind] = h;
 
+		chists[tl.ind] = h;
+	    ips[tl.parent1].color = col; // store the new color of this particle
 
 
     } else {
@@ -383,8 +469,13 @@ void CreateJet(std::vector<part>& ips, leave tl, std::map<int, TH2F*>& chists)
     	auto node = chists.extract(tl.parent1);
     	node.key() = tl.ind;
     	chists.insert(std::move(node));
-    	col = GetJetColor(chists.at(tl.ind));
     	int colold = chists[tl.ind]->GetFillColor();
+    	if (colold==0){
+    		col = colold;
+    		draw = false;
+    	} else {
+    		col = GetJetColor(chists.at(tl.ind));
+    	}
     	chists[tl.ind]->SetFillColor(col);
     	chists[tl.ind]->SetLineColor(col);    
     	chists[tl.ind]->SetName(jname);
@@ -393,7 +484,66 @@ void CreateJet(std::vector<part>& ips, leave tl, std::map<int, TH2F*>& chists)
     	UpdateColors(ips, colold, col);
     }
 
-    return;
+    return draw;
+}
+
+void UpdateParticleColors(int ch, std::vector<part>& ips, std::vector<leave> tree, std::map<int, TH2F*> chists, int col)
+{
+	// update all particles in the history from the cluster with the cluster color.
+	// the function assumes that there is a cluster at position ch, if the input color 'col' is set to 0
+	// otherwise, it updates the particles with the given color
+
+	//std::cout << "\nUpdate particle colors: ch = " << ch << std::endl;
+	// get the index of parents of the current position in history
+	int ip1 = tree[ch].parent1;
+	int ip2 = tree[ch].parent2;
+	//std::cout << "p1 = " << ip1 << " p2 = " << ip2 << std::endl;
+
+	// get the color of the current chist if col=0
+	// otherwise take the color that has been given
+	if (col==0){
+		if (ch>ips.size()){
+			col = chists[ch]->GetFillColor();
+			//std::cout << "get color from hist at position " << ch << " with name " << chists[ch]->GetName() << " and color " << col << std::endl;
+		}
+	}
+
+	// do nothing if the color is 0 or gray (either pure ghost cluster or ghost-particle cluster)
+	if (col==0 || col==kGray) return;
+
+	// update the particle colors if these are real particles
+	if (ip1>0){
+		if (ip1<ips.size()){
+			//std::cout << "parent 1 is an input particle. " << std::endl;
+			if (ips[ip1].pt>1e-10){
+				ips[ip1].color = col;
+				//std::cout << "parent 1 is not a ghost. setting color to " << col << std::endl;
+			} else {
+				//std::cout << "parent 1 is a ghost. do nothing." << std::endl;
+			}
+		} else {
+			// this is a cluster itself: get the parents
+			// set ch = ip1, then call this routine again 
+			//std::cout << "parent 1 is a cluster itself. Call the function again with ch = " << ip1 << " (ip1)"  << std::endl;
+			UpdateParticleColors(ip1, ips, tree, chists, col);
+		}
+	}
+	if (ip2>0){
+		if (ip2<ips.size()){			
+			//std::cout << "parent 2 is an input particle. " << std::endl;
+			if (ips[ip2].pt>1e-10){
+				ips[ip2].color = col;
+				//std::cout << "parent 2 is not a ghost. setting color to " << col << std::endl;
+			} else {
+				//std::cout << "parent 2 is a ghost. do nothing." << std::endl;
+			}
+		} else {
+			// this is a cluster itself: get the parents.
+			// set ch = ip2, then call this routine again 	
+			//std::cout << "parent 2 is a cluster itself. Call the function again with ch = " << ip2 << " (ip2)"  << std::endl;
+			UpdateParticleColors(ip2, ips, tree, chists, col);
+		}
+	}
 }
 
 Int_t GetNextColor()
@@ -407,8 +557,10 @@ Int_t GetNextColor()
 Int_t GetJetColor(TH2F* jethist)
 {
 	// first, set some default color
-	static int num=0;
-	Int_t color = kGreen+num; 
+	//Int_t color = kGreen+2; 
+	Int_t lgray = TColor::GetColor("#f2f2f2");
+	//Int_t lgreen = TColor::GetColor("#f2f2f2");
+	Int_t color = lgray;
 
 	// now, let's try to get jet histograms from the file provided
 	//std::cout << "file = " << _jet_cols_fname << std::endl;
@@ -420,7 +572,6 @@ Int_t GetJetColor(TH2F* jethist)
 		jets = GetJets(file, dir);
 	} else {
 		std::cout << "GetJetColor: Couldn't open file with jet display, returning standard jet color. " << std::endl;
-		num++; // increase num by one, because we have used this color
 		return color;
 	}
 
@@ -429,14 +580,14 @@ Int_t GetJetColor(TH2F* jethist)
 	int imatch = -1;
 	for (int i=0; i<jets.size(); ++i){
 		Nmatch = CompareHists(jethist, jets[i]);
-		if (Nmatch>2){
+		if (Nmatch>4){
 			imatch = i; 
 			break;
 		}
 	}
 
 	// success if NMatch > 0
-	if (Nmatch>0){
+	if (Nmatch>4){
 		if (imatch<=2) color = allcols[imatch][0];
 		else color = allcols[2][0];
 		std::cout << "GetJetColor: Found a jet matching to this cluster. Returning color: " << color << std::endl;
@@ -446,7 +597,7 @@ Int_t GetJetColor(TH2F* jethist)
 	// still here? then try jets rejected by SD criterion
 	TH2F* subjets_rejected_sd = GetSubjetsRejectedBySD(file, dir);
 	Nmatch = CompareHists(jethist, subjets_rejected_sd);
-	if (Nmatch>0){
+	if (Nmatch>2){
 		color = TColor::GetColor( "#808080"); // dark gray
 		std::cout << "GetJetColor: Found a SD-rejected cluster matching to this cluster. Returning color #808080: " << color << std::endl;		
 		return color; 
@@ -455,7 +606,7 @@ Int_t GetJetColor(TH2F* jethist)
 	// still here? now try jets rejected because they don't have a subjet
     TH2F* jets_rejected = GetJetsWithoutSubjets(file, dir);
 	Nmatch = CompareHists(jethist, jets_rejected);
-	if (Nmatch>0){
+	if (Nmatch>3){
 		color = TColor::GetColor( "#e6e6e6"); // light gray
 		std::cout << "GetJetColor: Found a jet without subjets matching to this cluster. Returning color #e6e6e6: " << color << std::endl;		
 		return color; 
@@ -464,8 +615,8 @@ Int_t GetJetColor(TH2F* jethist)
 	// lastly: all jets with pt smaller than ptsub and ptjet
 	TH2F* jets_low_pt = GetJetsWithLowPt(file, dir);
 	Nmatch = CompareHists(jethist, jets_low_pt);
-	if (Nmatch>0){
-		color = TColor::GetColor( "#c4edc4"); // very light green
+	if (Nmatch>2){
+		color = kWhite;
 		std::cout << "GetJetColor: Found a low-pt (sub)jet matching to this cluster. Returning color #c4edc4: " << color << std::endl;		
 		return color; 
 	}	
@@ -473,8 +624,7 @@ Int_t GetJetColor(TH2F* jethist)
 	// still here? then there is no match to any of the jets in the display
 	// maybe the histogram bin sizes don't match, or something else went wrong.
 	// in this case, return a standard color
-	num++; // increase num by one, because we have used this color
-	std::cout << "GetJetColor: Did not find any jet in the jet display histograms. Returning default color: " << color << std::endl;		
+	std::cout << "GetJetColor: Did not find any jet in the jet display histograms. Returning default color (light gray): " << color << std::endl;		
 	return color;
 
 }
@@ -494,7 +644,6 @@ int CompareHists(TH2F* h1, TH2F* h2)
 			}
 		}
 	}
-
 	return Nmatch; 
 }
 
@@ -502,15 +651,21 @@ void DrawAll(std::vector<part> ips, std::map<int, TH2F*> chists)
 {	
 	// draws the input particles and clusters on the current pad
 	
-	// first: draw all input particles
-	PlotInputParts(ips); 
-
-	// now draw the clusters by looping over all stored histograms
+	// draw the clusters by looping over all stored histograms
+	int i=0;
 	for (const auto& [key, cluster] : chists){
       //std::cout << "Drawing cluster with index " << '[' << key << "] = " << cluster->GetName() << "; Entries = " << cluster->GetEntries() 
       //          << " color = " << cluster->GetFillColor() <<  std::endl;
+	  if (cluster->GetFillColor()==kGray) continue;
+	  if (cluster->GetFillColor()==0) continue;
       DrawContour(cluster, cluster->GetFillColor()); 
+      ++i;
     }
+    std::cout << "Drew " << i << " contours onto the canvas." << std::endl;
+
+    // first: draw the input particles on top
+	PlotInputParts(ips); 
+
 
 }
 
@@ -520,7 +675,7 @@ void PrintStep(int step, std::vector<part> ips, std::vector<leave> tree)
   uint Np = ips.size();
   int ch = step - 1 + Np; 
 
-  TString info = TString::Format("Clustering step: %04d, d_{ij} = %f", ch, tree[ch].dij);
+  TString info = TString::Format("Clustering step: %05d, d_{ij} = %f", ch, tree[ch].dij);
   TLatex *text1 = new TLatex(3.5, 24, info);
   text1->SetNDC();
   text1->SetTextAlign(13);

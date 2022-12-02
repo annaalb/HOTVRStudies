@@ -481,7 +481,7 @@ void DrawContour(TH2F* hist, int col)
   //float cl;
   //int   fcol = kBlue;
 
-  h->SetContourLevel( 0, 0.5 );
+  h->SetContourLevel( 0, 0.3 );
 
   h->SetLineWidth( 1 );
   h->SetFillColor( col );  
@@ -546,7 +546,7 @@ void FixHistForContour(TH2F* h)
 
     // fix plot if N-sigma outside of scan range
     // scan along x-axis first
-    double df = 0.49;
+    double df = 0.29;
 
     for (int i=1; i<h->GetNbinsX()+1; ++i)
     {     
