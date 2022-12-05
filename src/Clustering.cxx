@@ -34,13 +34,16 @@ Clustering::Clustering(std::string clustering)
         if(line=="z_cut") _z_cut=get_value(value); // SD parameter
         if(line=="beta") _beta=get_value(value); // SD parameter
         if(line=="clustering_pt_threshold") _pt_threshold=get_value(value); // threshold pt, until which clustering is done without asking for SD condition (default = 0)
+        if(line=="a") _a=get_value(value); // exp parameter of effective radius
+        if(line=="b") _b=get_value(value); // exp parameter of effective radius
+        if(line=="c") _c=get_value(value); // exp parameter of effective radius
       }
       myfile.close();
     }
     else  std::cout<<"file not found"<<std::endl;
 
     if(_settings_not_shown){
-      show_settings();
+      //show_settings();
     }
 
 }
@@ -118,7 +121,7 @@ void Clustering::cluster_HOTVR_SD_jets(vector<PseudoJet> pseudojets, int nevent)
   bool ghost = false;
   if(ghost){pseudojets_to_cluster = add_ghosts(pseudojets);}
 
-  HOTVR hotvr_plugin(_beta, _z_cut, _pt_threshold, _min_r, _max_r, _rho, _subjetptmin, _mu, HOTVR::CALIKE, _alpha); // initialize plugin
+  HOTVR hotvr_plugin(_beta, _z_cut, _pt_threshold, _min_r, _max_r, _rho, _subjetptmin, _mu, HOTVR::CALIKE, _alpha, _a, _b, _c); // initialize plugin
   hotvr_plugin.set_jetptmin(_jetptmin);
   JetDefinition jet_def(&hotvr_plugin); // set up jet definition and cluster sequence
 
@@ -145,6 +148,7 @@ void Clustering::cluster_HOTVR_SD_jets(vector<PseudoJet> pseudojets, int nevent)
     _jet3_subjets_constituents = save_constituents(_hotvr_jets[3].user_info<HOTVRinfo>().subjets());
   }
 
+/*
   std::cout << "event nummer "<< nevent << ", in the clustering history to be stored."<< '\n';
 
   string string, string_history;
@@ -170,16 +174,16 @@ void Clustering::cluster_HOTVR_SD_jets(vector<PseudoJet> pseudojets, int nevent)
                  << " " << history.at(i).dij << '\n';
   }
   history_file.close();
-  }
+  */
 
-   _rejected_cluster=hotvr_plugin.get_rejected_cluster(); // get the rejected clusters below the pt threshold (CLUSTER)
-   _rejected_cluster_constituents = save_constituents(_rejected_cluster);
-  //
-   _soft_cluster=hotvr_plugin.get_soft_cluster(); // removed via Soft Drop Condition (NOVETO)
-   _soft_cluster_constituents = save_constituents(_soft_cluster);
-  //
-   _rejected_subjets=hotvr_plugin.get_rejected_subjets(); // get the rejected subjets with ptsub
-   _rejected_subjets_constituents = save_constituents(_rejected_subjets);
+  //  _rejected_cluster=hotvr_plugin.get_rejected_cluster(); // get the rejected clusters below the pt threshold (CLUSTER)
+  //  _rejected_cluster_constituents = save_constituents(_rejected_cluster);
+  // //
+  //  _soft_cluster=hotvr_plugin.get_soft_cluster(); // removed via Soft Drop Condition (NOVETO)
+  //  _soft_cluster_constituents = save_constituents(_soft_cluster);
+  // //
+  //  _rejected_subjets=hotvr_plugin.get_rejected_subjets(); // get the rejected subjets with ptsub
+  //  _rejected_subjets_constituents = save_constituents(_rejected_subjets);
 
   // convert rejected subjets into UHH2  jets
 //  _top_rejected_subjets=convert_subjets(_rejected_subjets);

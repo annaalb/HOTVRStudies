@@ -28,6 +28,7 @@ private:
   double _mu, _theta, _max_r, _min_r, _rho, _subjetptmin, _jetptmin, _alpha;
   double _z_cut, _beta, _pt_threshold;
   string _clustering_algorithmus;
+  double _a, _b, _c;
 
   std::vector<fastjet::PseudoJet> _hotvr_jets;
   std::vector<fastjet::PseudoJet> _vr_jets;
@@ -113,7 +114,7 @@ std::vector<std::vector<fastjet::PseudoJet>> get_hotvr_jet_constituents(){return
   std::vector<TopJet> get_top_parton_jets(){return _top_parton_jets;};
   std::vector<TopJet> get_top_W_parton_jets(){return _W_parton_jets;};
   std::vector<TopJet> get_top_b_parton_jets(){return _b_parton_jets;};
-  
+
 // Getter for rejected jets or subjets or soft jets
   std::vector<fastjet::PseudoJet> get_rejected_cluster(){return _rejected_cluster;};
   std::vector<fastjet::PseudoJet> get_soft_cluster(){return _soft_cluster;};
