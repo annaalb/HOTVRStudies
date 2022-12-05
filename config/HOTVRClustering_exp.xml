@@ -1,15 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE JobConfiguration PUBLIC "" "JobConfig.dtd"[
 
-<!ENTITY PRESELdir       "/nfs/dust/cms/user/albrecha/uhh2_102X_v2/HOTVRStudiesOutput/root/paper_jet_collections/HOTVR_SD_fancy_R_ET">
-<!--
-<!ENTITY PRESELdir       "/nfs/dust/cms/user/albrecha/uhh2_102X_v2/HOTVRStudiesOutput/root/paper_jet_collections/HOTVR_SD_fancy_R_grooming_fix_mass">
-<!ENTITY PRESELdir       "/nfs/dust/cms/user/albrecha/uhh2_102X_v2/HOTVRStudiesOutput/root/paper_jet_collections/HOTVR_SD_fancy_R">
-<!ENTITY PRESELdir       "/nfs/dust/cms/user/albrecha/uhh2_102X_v2/HOTVRStudiesOutput/root/paper_jet_collections/HOTVR_SD">
-<!ENTITY PRESELdir       "/nfs/dust/cms/user/albrecha/uhh2_102X_v2/HOTVRStudiesOutput/root/paper_jet_collections/HOTVR_MJ">
--->
+<!ENTITY PRESELdir       "/nfs/dust/cms/user/albrecha/uhh2_102X_v2/HOTVRStudiesOutput/root/paper_jet_collections/HOTVR_SD_fancy_R_ET/exp_scan/200_200_40">
+
 <!ENTITY b_Cacheable     "False">
-<!ENTITY NEVT            "-1">
+<!ENTITY NEVT            "1">
 
 <!--QCD files-->
 <!ENTITY QCD_flat_prod1 SYSTEM "/nfs/dust/cms/user/albrecha/ntuples/qcd_pythia8_flat_nnpdf23_prod1_f.xml">
@@ -37,9 +32,8 @@
 	  ]>
  <!--
 	     <ConfigParse NEventsBreak="0" FileSplit="4" AutoResubmit="5"/>
-	     <ConfigSGE RAM ="4" DISK ="3" Mail="anna.albrecht@desy.de" Notification="as" Workdir="workdir_HOTVRClustering"/>
+	     <ConfigSGE RAM ="4" DISK ="3" Mail="anna.albrecht@desy.de" Notification="as" Workdir="workdir_HOTVRClustering_exp_200_200_40"/>
 	     -->
-
 
 <!-- OutputLevel controls which messages are printed; set to VERBOSE or DEBUG for more verbosity, to WARNING or ERROR for less -->
 <JobConfiguration JobName="ExampleCycleJob" OutputLevel="INFO">
@@ -62,7 +56,6 @@
  <OutputTree Name="AnalysisTree" />
 		 </InputData>
 		 <!-- graviton files -->
-		 <!--
 	      <InputData Lumi="1" NEventsMax="&NEVT;" Type="MC" Version="graviton_to_HH" Cacheable="&b_Cacheable;">
 		&graviton_to_HH;
 		<InputTree Name="AnalysisTree" />
@@ -80,14 +73,11 @@
 		<InputTree Name="AnalysisTree" />
 		<OutputTree Name="AnalysisTree" />
 				</InputData>
--->
+
         <UserConfig>
 
-					<Item Name="Clustering" Value="/nfs/dust/cms/user/albrecha/uhh2_102X_v2/CMSSW_10_2_17/src/UHH2/HOTVRStudies/config/hotvr.config" />
-		<!--
-		<Item Name="Clustering" Value="/nfs/dust/cms/user/albrecha/uhh2_102X_v2/CMSSW_10_2_17/src/UHH2/HOTVRStudies/config/hotvr_all_particles.config" />
-			<Item Name="Clustering" Value="/nfs/dust/cms/user/albrecha/uhh2_102X_v2/CMSSW_10_2_17/src/UHH2/HOTVRStudies/config/hotvr_MJ.config" />
-		-->
+					<Item Name="Clustering" Value="/nfs/dust/cms/user/albrecha/uhh2_102X_v2/CMSSW_10_2_17/src/UHH2/HOTVRStudies/config/hotvr_exp_200_200_40.config" />
+
 	    <Item Name="GenParticleCollection" Value="GenParticles" />
 
       <!-- the class name of the AnalysisModule subclasses to run: -->
