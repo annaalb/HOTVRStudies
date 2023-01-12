@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE JobConfiguration PUBLIC "" "JobConfig.dtd"[
+
+<!ENTITY PRESELdir       "/nfs/dust/cms/user/albrecha/uhh2_102X_v2/HOTVRStudiesOutput/root/paper_jet_collections/HOTVR_SD_fancy_R_ET/exp_scan/200_200_20">
+
+<!ENTITY b_Cacheable     "False">
+<!ENTITY NEVT            "-1">
+
+<!--QCD files-->
+<!ENTITY QCD_flat_prod1 SYSTEM "/nfs/dust/cms/user/albrecha/ntuples/qcd_pythia8_flat_nnpdf23_prod1_f.xml">
+<!ENTITY QCD_flat_prod2 SYSTEM "/nfs/dust/cms/user/albrecha/ntuples/qcd_pythia8_flat_nnpdf23_prod2_f.xml">
+<!ENTITY QCD_flat_prod3 SYSTEM "/nfs/dust/cms/user/albrecha/ntuples/qcd_pythia8_flat_nnpdf23_prod3_f.xml">
+<!ENTITY QCD_flat_prod4 SYSTEM "/nfs/dust/cms/user/albrecha/ntuples/qcd_pythia8_flat_nnpdf23_prod4_f.xml">
+<!ENTITY QCD_flat_prod5 SYSTEM "/nfs/dust/cms/user/albrecha/ntuples/qcd_pythia8_flat_nnpdf23_prod5_f.xml">
+<!ENTITY QCD_flat_prod6 SYSTEM "/nfs/dust/cms/user/albrecha/ntuples/qcd_pythia8_flat_nnpdf23_prod6_f.xml">
+<!ENTITY QCD_flat_prod7 SYSTEM "/nfs/dust/cms/user/albrecha/ntuples/qcd_pythia8_flat_nnpdf23_prod7_f.xml">
+<!ENTITY QCD_flat_prod8 SYSTEM "/nfs/dust/cms/user/albrecha/ntuples/qcd_pythia8_flat_nnpdf23_prod8_f.xml">
+<!ENTITY QCD_flat_prod9 SYSTEM "/nfs/dust/cms/user/albrecha/ntuples/qcd_pythia8_flat_nnpdf23_prod9_f.xml">
+<!ENTITY QCD_flat_prod10 SYSTEM "/nfs/dust/cms/user/albrecha/ntuples/qcd_pythia8_flat_nnpdf23_prod10_f.xml">
+
+<!--ttbar files-->
+<!ENTITY ttbar_pythia8_flat_nnpdf23 SYSTEM "/nfs/dust/cms/user/albrecha/ntuples/ttbar_pythia8_flat_nnpdf23_.xml">
+<!ENTITY ttbar_pythia8_flat_nnpdf23_s1 SYSTEM "/nfs/dust/cms/user/albrecha/ntuples/ttbar_pythia8_flat_nnpdf23_s1_.xml">
+<!ENTITY ttbar_pythia8_flat_nnpdf23_s2 SYSTEM "/nfs/dust/cms/user/albrecha/ntuples/ttbar_pythia8_flat_nnpdf23_s2_.xml">
+<!ENTITY ttbar_pythia8_nnpdf23 SYSTEM "/nfs/dust/cms/user/albrecha/ntuples/ttbar_pythia8_nnpdf23_.xml">
+
+<!--graviton files-->
+<!ENTITY graviton_to_HH SYSTEM "/nfs/dust/cms/user/kogler/Pythia8/sframe_xmls/graviton_to_HH.xml">
+<!ENTITY graviton_to_WW SYSTEM "/nfs/dust/cms/user/kogler/Pythia8/sframe_xmls/graviton_to_WW.xml">
+<!ENTITY graviton_to_ZZ SYSTEM "/nfs/dust/cms/user/kogler/Pythia8/sframe_xmls/graviton_to_ZZ.xml">
+
+	  ]>
+ <!--
+	     <ConfigParse NEventsBreak="0" FileSplit="4" AutoResubmit="5"/>
+	     <ConfigSGE RAM ="4" DISK ="3" Mail="anna.albrecht@desy.de" Notification="as" Workdir="workdir_HOTVRClustering_exp_200_200_20"/>
+	     -->
+
+<!-- OutputLevel controls which messages are printed; set to VERBOSE or DEBUG for more verbosity, to WARNING or ERROR for less -->
+<JobConfiguration JobName="ExampleCycleJob" OutputLevel="INFO">
+    <Library Name="libSUHH2HOTVRStudies"/>
+    <Package Name="SUHH2HOTVRStudies.par" />
+
+   <Cycle Name="uhh2::AnalysisModuleRunner" OutputDirectory="&PRESELdir;/" PostFix="" TargetLumi="1" >
+
+		 <!-- QCD -->
+
+		 <InputData Lumi="1" NEventsMax="&NEVT;" Type="MC" Version="QCD_flat_prod1" Cacheable="&b_Cacheable;">
+ &QCD_flat_prod1;
+ <InputTree Name="AnalysisTree" />
+ <OutputTree Name="AnalysisTree" />
+		 </InputData>
+		 <!-- ttbar -->
+		 <InputData Lumi="1" NEventsMax="&NEVT;" Type="MC" Version="ttbar_pythia8_flat_nnpdf23" Cacheable="&b_Cacheable;">
+ &ttbar_pythia8_flat_nnpdf23;
+ <InputTree Name="AnalysisTree" />
+ <OutputTree Name="AnalysisTree" />
+		 </InputData>
+		 <!-- graviton files -->
+	      <InputData Lumi="1" NEventsMax="&NEVT;" Type="MC" Version="graviton_to_HH" Cacheable="&b_Cacheable;">
+		&graviton_to_HH;
+		<InputTree Name="AnalysisTree" />
+		<OutputTree Name="AnalysisTree" />
+	      </InputData>
+
+				<InputData Lumi="1" NEventsMax="&NEVT;" Type="MC" Version="graviton_to_WW" Cacheable="&b_Cacheable;">
+		&graviton_to_WW;
+		<InputTree Name="AnalysisTree" />
+		<OutputTree Name="AnalysisTree" />
+				</InputData>
+
+				<InputData Lumi="1" NEventsMax="&NEVT;" Type="MC" Version="graviton_to_ZZ" Cacheable="&b_Cacheable;">
+		&graviton_to_ZZ;
+		<InputTree Name="AnalysisTree" />
+		<OutputTree Name="AnalysisTree" />
+				</InputData>
+
+        <UserConfig>
+
+					<Item Name="Clustering" Value="/nfs/dust/cms/user/albrecha/uhh2_102X_v2/CMSSW_10_2_17/src/UHH2/HOTVRStudies/config/hotvr_exp_200_200_20.config" />
+
+	    <Item Name="GenParticleCollection" Value="GenParticles" />
+
+      <!-- the class name of the AnalysisModule subclasses to run: -->
+      <Item Name="AnalysisModule" Value="HOTVRClusteringModule" />
+
+      <!-- 	tell AnalysisModuleRunner NOT to use the MC event weight from SFrame; rather let
+          	MCLumiWeight (called via CommonModules) calculate the MC event weight. The MC
+          	event weight assigned by MCLumiWeight is InputData.Lumi / Cycle.TargetLumi. -->
+      <Item Name="use_sframe_weight" Value="false" />
+
+        </UserConfig>
+    </Cycle>
+</JobConfiguration>

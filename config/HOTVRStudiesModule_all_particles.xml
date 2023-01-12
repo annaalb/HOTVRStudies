@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE JobConfiguration PUBLIC "" "JobConfig.dtd"[
 
-		<!ENTITY INdir       "/nfs/dust/cms/user/albrecha/uhh2_102X_v2/HOTVRStudiesOutput/root/paper_jet_collections/HOTVR_SD_fancy_R_ET">
-		<!ENTITY PRESELdir       "/nfs/dust/cms/user/albrecha/uhh2_102X_v2/HOTVRStudiesOutput/root/paper_jet_collections/HOTVR_SD_fancy_R_ET/HISTS">
+		<!ENTITY INdir       "/nfs/dust/cms/user/albrecha/uhh2_102X_v2/HOTVRStudiesOutput/root/paper_jet_collections/HOTVR_SD_fancy_R_ET/exp_scan/200_200_40">
+		<!ENTITY PRESELdir       "/nfs/dust/cms/user/albrecha/uhh2_102X_v2/HOTVRStudiesOutput/root/paper_jet_collections/HOTVR_SD_fancy_R_ET/exp_scan/200_200_40/HISTS">
 	  <!ENTITY b_Cacheable     "False">
 	  <!ENTITY NEVT            "-1">
 
@@ -107,7 +107,7 @@
 					<In FileName="&ttbar_pythia8_nnpdf23;" Lumi="1"/>
 					<InputTree Name="AnalysisTree" />
 	      </InputData>
-
+-->
 				<InputData Lumi="1" NEventsMax="&NEVT;" Type="MC" Version="graviton_to_HH" Cacheable="&b_Cacheable;">
 				 <In FileName="&graviton_to_HH;" Lumi="1"/>
 				 <InputTree Name="AnalysisTree" />
@@ -120,7 +120,7 @@
 			 <In FileName="&graviton_to_ZZ;" Lumi="1"/>
 			 <InputTree Name="AnalysisTree" />
 		 </InputData>
--->
+
         <UserConfig>
 			<Item Name="Clustering" Value="/nfs/dust/cms/user/albrecha/uhh2_102X_v2/CMSSW_10_2_17/src/UHH2/HOTVRStudies/config/hotvr.config" />
 
