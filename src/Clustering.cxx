@@ -433,6 +433,10 @@ void Clustering::show_settings(){
     std::cout<<"pt threshold: "<<_pt_threshold <<" GeV"<<std::endl;
     std::cout<<"minimum pt of subjets: "<<_subjetptmin <<" GeV"<<std::endl;
     std::cout<<"minimum jet pt: "<<_jetptmin<<" GeV"<<std::endl;
+    std::cout << "a" << _a << '\n';
+    std::cout << "b" << _b << '\n';
+    std::cout << "c" << _c << '\n';
+
   }
 
   if(algo=="variabler"){

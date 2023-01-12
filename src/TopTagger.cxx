@@ -68,3 +68,30 @@ bool TopTagger::Is_SD_tagged(PseudoJet &jet)
   if(mjet>140 && mjet<220 && nsubjets>2 && mmin>50 && ptfraction<0.8) tagged=true;
   return tagged;
 }
+
+bool TopTagger::Is_W_tagged(TopJet &jet)
+{
+  double mjet=jet.v4().M();
+  int nsubjets=jet.subjets().size();
+  bool tagged=false;
+  if(mjet>65 && mjet<95) tagged=true;
+  return tagged;
+}
+
+bool TopTagger::Is_Z_tagged(TopJet &jet)
+{
+  double mjet=jet.v4().M();
+  int nsubjets=jet.subjets().size();
+  bool tagged=false;
+  if(mjet>75 && mjet<105) tagged=true;
+  return tagged;
+}
+
+bool TopTagger::Is_H_tagged(TopJet &jet)
+{
+  double mjet=jet.v4().M();
+  int nsubjets=jet.subjets().size();
+  bool tagged=false;
+  if(mjet>110 && mjet<140) tagged=true;
+  return tagged;
+}
