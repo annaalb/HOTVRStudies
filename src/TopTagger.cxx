@@ -13,6 +13,9 @@ bool TopTagger::Is_tagged(string tagger, TopJet &jet)
 {
   if(tagger=="HOTVR"||tagger=="hotvr") return Is_HOTVR_tagged(jet);
   else if(tagger=="SD"||tagger=="Soft Drop" ||tagger=="softdrop" || tagger=="sd") return Is_SD_tagged(jet);
+  else if(tagger=="W") return Is_W_tagged(jet);
+  else if(tagger=="Z") return Is_Z_tagged(jet);
+  else if(tagger=="H") return Is_H_tagged(jet);
   else return false;
 }
 

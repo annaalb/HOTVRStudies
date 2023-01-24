@@ -75,6 +75,11 @@ private:
   std::unique_ptr<HOTVRJetsHists> hist_tagged_jets_800;
   std::unique_ptr<HOTVRJetsHists> hist_tagged_jets_1000;
 
+  std::unique_ptr<HOTVRJetsHists> hist_tagged_W_jets; //TODO das hier im normalen Modul einbauen
+  std::unique_ptr<HOTVRJetsHists> hist_tagged_Z_jets;
+  std::unique_ptr<HOTVRJetsHists> hist_tagged_H_jets;
+
+
   std::unique_ptr<HOTVRJetsHists> hist_njets_matched;
 
 // initialize event handle
@@ -129,10 +134,11 @@ HOTVRStudiesModuleZWH::HOTVRStudiesModuleZWH(Context & ctx){
   m_clustering = ctx.get("Clustering");
 // check for the dataset version (ttbar or QCD)
   dataset_version = ctx.get("dataset_version");
+  if (debug) {std::cout << "dataset_version " << dataset_version << '\n' ;}
   isTTbar = dataset_version.find("ttbar") == 0;
-  isW = dataset_version.find("WW") == 0;
-  isH = dataset_version.find("HH") == 0;
-  isZ = dataset_version.find("ZZ") == 0;
+  isW = dataset_version.find("graviton_to_WW") == 0;
+  isH = dataset_version.find("graviton_to_HH") == 0;
+  isZ = dataset_version.find("graviton_to_ZZ") == 0;
 
   is_mc = ctx.get("dataset_type") == "MC";
   is_qcd = (dataset_version.find("QCD") == 0);
@@ -219,7 +225,7 @@ matching = new Matching();
 //run_matching: loop over the parton jets and match them to the hotvr jets
   vector<TopJet> matched_jets;
   vector<TopJet> matched_parton_jets;
-  matching->run_matching(_top_hotvr_jets, _top_parton_jets);
+  matching->run_matching(_top_hotvr_jets, _top_parton_jets); // TODO für alle sample matching für top, W,H,Z (run_matching_W, run_matching_Z, run_matching_H)
   matched_jets = matching->get_matched_jets();
   matched_parton_jets = matching->get_matched_parton_jets();
   vector<pair<TopJet, TopJet>> matched_pair = matching->get_matched_pairs();
@@ -243,11 +249,17 @@ matching = new Matching();
 
 // --------apply Tagger-----------------
     string tagger;
-    if (isW) tagger = "W";
     if (isZ) tagger = "Z";
-    if (isH) tagger = "H";
+    else if (isW) tagger = "W";
+    else if (isH) tagger = "H";
 
+    if(debug){
+      std::cout << "before tagger "<< tagger << '\n';
+      std::cout << "matched jets " << matched_jets[j].pt() << '\n';
+    }
+// TODO
     if(toptagger->Is_tagged(tagger, matched_jets[j])){
+      if(debug){std::cout << "tagger " << tagger << '\n';}
       matched_jets_tagged.push_back(matched_jet);
       matched_pair_tagged.push_back(matched_pair[j]);
       // fill hists with tagged jets

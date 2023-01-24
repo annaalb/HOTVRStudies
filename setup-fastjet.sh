@@ -1,4 +1,5 @@
 cd /nfs/dust/cms/user/albrecha/uhh2_102X_v2/fastjet-contrib/
+make clean
 make -j9
 make check
 make install

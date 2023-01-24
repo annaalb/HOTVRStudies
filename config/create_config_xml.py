@@ -2,7 +2,7 @@
 #a150_b170_c60, a200_b180_c40, a200_b200_c20,  a200_b200_c60, a250_b220_c40
 #default a200_b200_c40,
 
-param_string = ["150_170_60", "200_180_40", "200_200_20", "200_200_60", "250_220_40", "200_200_20"]
+param_string = ["150_170_60", "200_180_40", "200_200_20", "200_200_60", "250_220_40", "200_200_40"]
 variable = range(6)
 
 # create xml
@@ -16,5 +16,5 @@ for i in variable:
     #print("cp hotvr_exp_200_200_40.config hotvr_exp_"+param_string[i] + ".config")
     #print("cp HOTVRStudiesModule_all_particles.xml HOTVRStudiesModule_exp_"+param_string[i] + ".xml")
 
-    print("sframe_batch.py -l HOTVRStudiesModule_exp_"+param_string[i]+".xml")
+    print("sframe_batch.py -a HOTVRStudiesModule_exp_"+param_string[i]+".xml")
     #print("sframe_batch.py -s HOTVRStudiesModule_exp_"+param_string[i]+".xml")
