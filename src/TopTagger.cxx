@@ -112,6 +112,5 @@ bool TopTagger::Is_particle_mass(double mjet, string particle)
   else if(particle=="h" && mjet>110 && mjet<140) return true;
   else if(std::find(allowed_particles.begin(), allowed_particles.end(), particle) == allowed_particles.end()) throw runtime_error("Particle "+particle+" is not in the list. No mass cut definition available for this particle. Please add it to TopTagger::Is_particle_mass");
   else return false;
-									    
-}
 
+}

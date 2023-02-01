@@ -114,8 +114,7 @@ std::unique_ptr<HOTVRJetsHists> hist_top_parton_jets_1000;
   vector<fastjet::PseudoJet> pseudojets;
   vector<fastjet::PseudoJet> hotvr_jets;
   vector<fastjet::PseudoJet> parton_pseudojets;
-  vector<fastjet::PseudoJet> W_parton_pseudojets;
-  vector<fastjet::PseudoJet> b_parton_pseudojets;
+  vector<fastjet::PseudoJet> Wb_parton_pseudojets;
 
   vector<fastjet::PseudoJet> parton_jets;
   vector<fastjet::PseudoJet> W_parton_jets;
@@ -252,48 +251,58 @@ bool HOTVRWTopMatchingModule::process(Event & event) {
     if (debug) {std::cout << "Get stable particles" << '\n';}
 
     matching->set_partons(genparticles); // Input for top parton jet clustering
-    matching->set_W_partons(genparticles); // INput for W parton jets
-    matching->set_b_partons(genparticles); // INput for W parton jets
+    matching->set_Wb_partons_from_top(genparticles); // Input for W and b parton jets
 
     parton_pseudojets = matching->get_partons();
-    W_parton_pseudojets = matching->get_W_partons();
-    b_parton_pseudojets = matching->get_b_partons();
+    Wb_parton_pseudojets = matching->get_Wb_partons();
 
-    if (debug) {std::cout << "Set and get partons" << '\n';
-      std::cout << "b partons size "<< b_parton_pseudojets.size() << '\n';
-  }
-    // -----CLUSTERING -----
-    clustering = new Clustering(m_clustering);
-   clustering->cluster_jets(pseudojets); // cluster the pseudojets, possible modes defined in hotvr.config: "HOTVR, HOTVR_SD, VR"
-   hotvr_jets = clustering->get_hotvr_jets();
-   _top_hotvr_jets=clustering->get_top_hotvr_jets();
-   if (debug) {std::cout << "Cluster HOTVR jets " << '\n';}
-
-   for (size_t i = 0; i < _top_hotvr_jets.size(); i++) {
-     TopJet jet = _top_hotvr_jets[i];
-     hist_hotvr_jets->fill_topjet(event, jet);
-     if(jet.pt()>200 &&jet.pt()<400)  hist_hotvr_jets_200->fill_topjet(event, jet);
-     if(jet.pt()>400 &&jet.pt()<600)  hist_hotvr_jets_400->fill_topjet(event, jet);
-     if(jet.pt()>600 &&jet.pt()<800)  hist_hotvr_jets_600->fill_topjet(event, jet);
-     if(jet.pt()>800 &&jet.pt()<1000)  hist_hotvr_jets_800->fill_topjet(event, jet);
-     if(jet.pt()>1000 &&jet.pt()<1200)  hist_hotvr_jets_1000->fill_topjet(event, jet);
-   }
-   // // cluster W GENJETS
-   clustering->cluster_W_parton_jets(W_parton_pseudojets);
-   W_parton_jets = clustering->get_W_parton_jets();
-   _top_parton_jets_W = clustering->get_top_W_parton_jets();
-   if (debug) {std::cout << "Cluster W jets " << '\n';}
-   // // cluster b GENJETS
-   clustering->cluster_b_parton_jets(b_parton_pseudojets);
-   b_parton_jets = clustering->get_b_parton_jets();
-   _top_parton_jets_b = clustering->get_top_b_parton_jets();
-   if (debug) {std::cout << "Cluster b jets " << '\n';
-    std::cout << b_parton_jets.size() << '\n';
+    if (debug) {
+      std::cout << "Set and get partons" << '\n';
+      std::cout << "Wb partons size "<< Wb_parton_pseudojets.size() << '\n';
     }
 
-   clustering->cluster_parton_jets(parton_pseudojets, isTTbar);
-   parton_jets = clustering->get_parton_jets();
-   _top_parton_jets = clustering->get_top_parton_jets();
+    // -----CLUSTERING -----
+    clustering = new Clustering(m_clustering);
+    clustering->cluster_jets(pseudojets); // cluster the pseudojets, possible modes defined in hotvr.config: "HOTVR, HOTVR_SD, VR"
+    hotvr_jets = clustering->get_hotvr_jets();
+    _top_hotvr_jets=clustering->get_top_hotvr_jets();
+    if (debug) {std::cout << "Cluster HOTVR jets " << '\n';}
+
+    for (size_t i = 0; i < _top_hotvr_jets.size(); i++) {
+      TopJet jet = _top_hotvr_jets[i];
+      hist_hotvr_jets->fill_topjet(event, jet);
+      if(jet.pt()>200 &&jet.pt()<400)  hist_hotvr_jets_200->fill_topjet(event, jet);
+      if(jet.pt()>400 &&jet.pt()<600)  hist_hotvr_jets_400->fill_topjet(event, jet);
+      if(jet.pt()>600 &&jet.pt()<800)  hist_hotvr_jets_600->fill_topjet(event, jet);
+      if(jet.pt()>800 &&jet.pt()<1000)  hist_hotvr_jets_800->fill_topjet(event, jet);
+      if(jet.pt()>1000 &&jet.pt()<1200)  hist_hotvr_jets_1000->fill_topjet(event, jet);
+    }
+   // cluster W parton GENJETS
+   clustering->cluster_parton_jets(Wb_parton_pseudojets, 24);
+   W_parton_jets = clustering->get_parton_pseudojets();
+   _top_parton_jets_W = clustering->get_parton_jets();
+   if (debug) {
+     std::cout << "Cluster W jets " << '\n';
+     std::cout << "Number of W jets: " << _top_parton_jets_W.size() << '\n';
+   }
+   // cluster b parton GENJETS
+   clustering->ResetPartonJets();
+   clustering->cluster_parton_jets(Wb_parton_pseudojets, 5);
+   b_parton_jets = clustering->get_parton_pseudojets();
+   _top_parton_jets_b = clustering->get_parton_jets();
+   if (debug) {
+     std::cout << "Cluster b jets " << '\n';
+     std::cout << b_parton_jets.size() << '\n';
+   }
+
+   clustering->ResetPartonJets();
+   uint keepID=0;
+   if (isTTbar){
+     keepID=6;
+   }
+   clustering->cluster_parton_jets(parton_pseudojets, keepID);
+   parton_jets = clustering->get_parton_pseudojets();
+   _top_parton_jets = clustering->get_parton_jets();
    if (debug) {std::cout << "Cluster top jets " << '\n';}
    // Plot control hists for the 3 collections of parton jets
     for (size_t i = 0; i < _top_parton_jets_W.size(); i++) {
@@ -333,9 +342,9 @@ bool HOTVRWTopMatchingModule::process(Event & event) {
      TopJet jet = _top_hotvr_jets[i];
      if (jet.pt()>30) {
      // // get closest W jet
-     TopJet closest_W_jet = matching->get_closest_jet(1, jet, _top_parton_jets_W);
+     TopJet closest_W_jet = matching->get_closest_jet(jet, _top_parton_jets_W);
      // // get closest top jet
-     closest_top_jet = matching->get_closest_jet(1, jet, _top_parton_jets);
+     closest_top_jet = matching->get_closest_jet(jet, _top_parton_jets);
      // // if matched to W jet -> find closest b jet
      if (debug) {
        std::cout << " ------- HOTVR jet pt = " << jet.pt() << '\n';
@@ -346,7 +355,7 @@ bool HOTVRWTopMatchingModule::process(Event & event) {
      }
 
      if (closest_W_jet.pt() > 0) {
-         TopJet closest_b_jet = matching->get_closest_jet(10, jet, _top_parton_jets_b);
+         TopJet closest_b_jet = matching->get_closest_jet(jet, _top_parton_jets_b);
          if(debug){
            std::cout << "closest b jet pt = " << closest_b_jet.pt() << '\n';
            std::cout << "Delta R between top and b " << deltaR(closest_top_jet, closest_b_jet) << '\n';

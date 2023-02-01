@@ -16,6 +16,11 @@ private:
   bool Is_Z_tagged(TopJet &jet);
 
 
+  bool Is_W_tagged(TopJet &jet);
+  bool Is_H_tagged(TopJet &jet);
+  bool Is_Z_tagged(TopJet &jet);
+
+
   bool Is_HOTVR_tagged(fastjet::PseudoJet &jet);
   bool Is_SD_tagged(fastjet::PseudoJet &jet);
 

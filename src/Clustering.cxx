@@ -148,33 +148,35 @@ void Clustering::cluster_HOTVR_SD_jets(vector<PseudoJet> pseudojets, int nevent)
     _jet3_subjets_constituents = save_constituents(_hotvr_jets[3].user_info<HOTVRinfo>().subjets());
   }
 
-/*
-  std::cout << "event nummer "<< nevent << ", in the clustering history to be stored."<< '\n';
+  bool store_clustering_history = false;
+  if (store_clustering_history){
+    std::cout << "event nummer "<< nevent << ", in the clustering history to be stored."<< '\n';
 
-  string string, string_history;
+    string string, string_history;
 
-  string = "output/pseudojets_input_"+ to_string(nevent) +".txt";
-  string_history = "output/history_"+ to_string(nevent) +".txt";
+    string = "output/pseudojets_input_"+ to_string(nevent) +".txt";
+    string_history = "output/history_"+ to_string(nevent) +".txt";
 
-  ofstream outfile(string);
-  ofstream history_file(string_history);
-  outfile << "##Input pseudojets size "<< pseudojets_to_cluster.size() << " of event "<< to_string(nevent) << '\n';
-  outfile << "## pseudojet_index pt eta phi" << '\n';
-  for (size_t i = 0; i < pseudojets_to_cluster.size(); i++) {
-    outfile << i << " "<< pseudojets_to_cluster.at(i).pt() << " "<< pseudojets_to_cluster.at(i).eta() << " "<< pseudojets_to_cluster.at(i).phi()<< '\n';
+    ofstream outfile(string);
+    ofstream history_file(string_history);
+    //outfile.open(string);
+    outfile << "##Input pseudojets size "<< pseudojets_to_cluster.size() << " of event "<< to_string(nevent) << '\n';
+    outfile << "## pseudojet_index pt eta phi" << '\n';
+    for (size_t i = 0; i < pseudojets_to_cluster.size(); i++) {
+      outfile << i << " "<< pseudojets_to_cluster.at(i).pt() << " "<< pseudojets_to_cluster.at(i).eta() << " "<< pseudojets_to_cluster.at(i).phi()<< '\n';
+    }
+    outfile.close();
+
+    auto history = _clust_seq->history();
+    history_file << "## Clustering history of event "<< to_string(nevent) << '\n';
+    history_file << "## history_index parent1 parent2 child dij" << '\n';
+    std::cout << "size of history = " << history.size() << std::endl;
+    for (size_t i = 0; i < history.size(); i++) {
+      history_file << i << " " << history.at(i).parent1 << " "<< history.at(i).parent2 << " "<< history.at(i).child
+                   << " " << history.at(i).dij << '\n';
+    }
+    history_file.close();
   }
-  outfile.close();
-
-  auto history = _clust_seq->history();
-  history_file << "## Clustering history of event "<< to_string(nevent) << '\n';
-  history_file << "## history_index parent1 parent2 child dij" << '\n';
-  std::cout << "size of history = " << history.size() << std::endl;
-  for (size_t i = 0; i < history.size(); i++) {
-    history_file << i << " " << history.at(i).parent1 << " "<< history.at(i).parent2 << " "<< history.at(i).child
-                 << " " << history.at(i).dij << '\n';
-  }
-  history_file.close();
-  */
 
   //  _rejected_cluster=hotvr_plugin.get_rejected_cluster(); // get the rejected clusters below the pt threshold (CLUSTER)
   //  _rejected_cluster_constituents = save_constituents(_rejected_cluster);
@@ -288,65 +290,38 @@ void Clustering::cluster_VR_ISD_jets(vector<PseudoJet> pseudojets)
  }
 
 //-------------cluster parton jets and throw away top daughters-----------------
-void Clustering::cluster_parton_jets(vector<PseudoJet> pseudojets, bool ttbar)
+// the keepID is the PDG ID of the tartegt particles
+// if set to keepID > 0, only jets with this particle will be kept
+// only implemented at the moment: 5 (b), 6 (t), 23 (Z), 24 (W), 25 (H)
+// check Matching::set_partons for the IDs
+// if keepID=0, all jets will be kept
+void Clustering::cluster_parton_jets(vector<PseudoJet> pseudojets, int keepID)
 {
-  JetDefinition jet_def(antikt_algorithm,1.0);
+  JetDefinition jet_def(antikt_algorithm,0.8);
   vector<PseudoJet> parton_jets;
   ClusterSequence clust_seq(pseudojets, jet_def);
   parton_jets = sorted_by_pt(clust_seq.inclusive_jets(100.));
 
-  if(!ttbar) _parton_fatjets = parton_jets; //in case of a qcd sample keep all parton jets
-  else{ //in case of a ttbar sample keep only jets that contain a top
+  if(keepID==0){
+    _parton_pseudojets = parton_jets; //in case of a qcd sample keep all parton jets
+  } else { // in case of a ttbar sample keep only jets that contain a top
     for(unsigned i=0; i<parton_jets.size(); i++){
       bool candidate=false;
-      for(unsigned j=0;j<parton_jets[i].constituents().size(); j++) if(parton_jets[i].constituents().at(j).user_index()==6) candidate=true;
-      if(candidate){ _parton_fatjets.push_back(parton_jets[i]);}
+      for(unsigned j=0;j<parton_jets[i].constituents().size(); j++){
+        if( abs(parton_jets[i].constituents().at(j).user_index())==abs(keepID)){
+          candidate=true;
+        }
+      }
+      if(candidate){ _parton_pseudojets.push_back(parton_jets[i]);}
     }
   }
-  for (unsigned int i = 0; i < _parton_fatjets.size(); ++i) {
-    //convert into TopJet
-    _top_parton_jets.push_back(convert_jet(_parton_fatjets[i]));
+
+  //convert into TopJet
+  for (unsigned int i = 0; i < _parton_pseudojets.size(); ++i) {
+    _parton_jets.push_back(convert_jet(_parton_pseudojets[i]));
   }
 }
 
-//-------------cluster parton jets for W genparticles-----------------
-void Clustering::cluster_W_parton_jets(vector<PseudoJet> pseudojets)
-{
-  JetDefinition jet_def(antikt_algorithm,1.0);
-  vector<PseudoJet> parton_jets;
-  ClusterSequence clust_seq(pseudojets, jet_def);
-  parton_jets = sorted_by_pt(clust_seq.inclusive_jets(100.));
-
-   //in case of a W sample keep only jets that contain a W (index 6)
-    for(unsigned i=0; i<parton_jets.size(); i++){
-      bool candidate=false;
-      for(unsigned j=0;j<parton_jets[i].constituents().size(); j++) if(parton_jets[i].constituents().at(j).user_index()==6) candidate=true;
-      if(candidate){ _W_parton_fatjets.push_back(parton_jets[i]);}
-    }
-  for (unsigned int i = 0; i < _W_parton_fatjets.size(); ++i) {
-    //convert into TopJet
-    _W_parton_jets.push_back(convert_jet(_W_parton_fatjets[i]));
-  }
-}
-
-//-------------cluster parton jets for b genparticles-----------------
-void Clustering::cluster_b_parton_jets(vector<PseudoJet> pseudojets)
-{
-  JetDefinition jet_def(antikt_algorithm,1.0);
-  vector<PseudoJet> parton_jets;
-  ClusterSequence clust_seq(pseudojets, jet_def);
-  parton_jets = sorted_by_pt(clust_seq.inclusive_jets(100.));
-
-    for(unsigned i=0; i<parton_jets.size(); i++){
-      bool candidate=false;
-      for(unsigned j=0;j<parton_jets[i].constituents().size(); j++) if(parton_jets[i].constituents().at(j).user_index()==6) candidate=true;
-      if(candidate){ _b_parton_fatjets.push_back(parton_jets[i]);}
-    }
-  for (unsigned int i = 0; i < _b_parton_fatjets.size(); ++i) {
-    //convert into TopJet
-    _b_parton_jets.push_back(convert_jet(_b_parton_fatjets[i]));
-  }
-}
 
 //----------converts a pseudojet into a topjet----------------------------
 //----------the values for the groomed tau are set------------------------
@@ -451,14 +426,21 @@ void Clustering::show_settings(){
 vector<PseudoJet> Clustering::add_ghosts(vector<PseudoJet> gen_in){
   double pt, eta, phi, en, p;
   TLorentzVector ghost_v4;
-  for(uint i=0; i < 100; ++i){
-    for(uint i_=0; i_ < 100; ++i_ ){
-      phi = -M_PI + (i+0.5)*(2*M_PI/100);
-      eta = -M_PI + (i_+0.5)*(2*M_PI/100);
-      // create random energy
-      mt19937 rng( random_device{}() );
-      uniform_real_distribution<> dist(0.1, 1);
+  uint Ngrid = 50;
+  mt19937 rng( random_device{}() );
+  uniform_real_distribution<> dist(0.001, 1);
+  double df = (2*M_PI/Ngrid);
+  //std::cout << "step size df = " << df << std::endl;
+  for(uint i=0; i < Ngrid; ++i){
+    for(uint i_=0; i_ < Ngrid; ++i_ ){
+      // distribute eta and phi randomly in small squares
       double randnr = dist(rng);
+      phi = -M_PI + (i+0.5)*df;
+      phi += df*(0.5-dist(rng));
+      eta = -M_PI + (i_+0.5)*df;
+      eta += df*(0.5-dist(rng));
+      // create random energy: get new random number
+      randnr = dist(rng);
       en = randnr*1e-60;
       p = en; // massless, set p = E
       pt = p/cosh(eta);
@@ -484,7 +466,44 @@ void Clustering::Reset()
 {
   //delete _clust_seq;
   delete _clust_seq;
+  ResetPartonJets();
+
+  _hotvr_jets.clear();
+  _vr_jets.clear();
+  _vr_jets_SD.clear();
+  _vr_jets_ISD.clear();
+
+  _vr_jet_constituents.clear();
+  _hotvr_jet_constituents.clear();
+  _rejected_cluster_constituents.clear();
+  _soft_cluster_constituents.clear();
+  _rejected_subjets_constituents.clear();
+
+  _jet0_subjets_constituents.clear();
+  _jet1_subjets_constituents.clear();
+  _jet2_subjets_constituents.clear();
+  _jet3_subjets_constituents.clear();
+
+  _rejected_cluster.clear();
+  _soft_cluster.clear();
+  _rejected_subjets.clear();
+
+  _top_hotvr_jets.clear();
+  _top_vr_jets.clear();
+  _parton_jets.clear();
+
+  _top_rejected_cluster.clear();
+  _top_soft_cluster.clear();
+  _top_rejected_subjets.clear();
 }
+
+//-----------------reset clustering sequence------------------
+void Clustering::ResetPartonJets()
+{
+  _parton_jets.clear();
+  _parton_pseudojets.clear();
+}
+
 //----------------------------GETTER---------------------------
 vector<PseudoJet> Clustering::get_clustered_jets(){
   if(_clustering_algorithmus=="HOTVR" || _clustering_algorithmus=="HOTVR_MJ"){return _hotvr_jets;}
