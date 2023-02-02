@@ -650,10 +650,10 @@ void Matching::run_matching(vector<TopJet> particle_jets, vector<TopJet> parton_
 	for(uint j=0; j<parton_jets.size(); j++){
 
     // get the closest particle level jet
-    uint i = i_closest_particlejet(parton_jets[j], particle_jets);
+    uint i = i_closest_particlejet(parton_jets[j], jets);
     if (i>900) continue; // no matching jet found
 
-		TopJet matched_jet = particle_jets[i];
+		TopJet matched_jet = jets[i];
 
 		// set the matching radius
 		// double rho = 600;
