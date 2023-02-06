@@ -54,6 +54,7 @@ private:
   //initialize hist classes
   vector<string> pTs;
   vector<string> particles;
+  vector<string> selections;
 
   std::unique_ptr<HOTVRJetsHists> hist_njets_matched;
 
@@ -169,20 +170,25 @@ HOTVRStudiesModule::HOTVRStudiesModule(Context & ctx){
   // Set up Hists classes:
   pTs = {"200","400", "600","800","1000"};
   particles = {"top","W","Z","H"};
+  selections = {"_Nsub3","_fpt","_mass"};
+
   book_histograms(ctx, "hotvr", pTs, is_qcd, "");
 
   //  book_histograms(ctx, "hotvr", pTs, is_qcd, "_mGr130");
   //  book_histograms(ctx, "hotvr", pTs, is_qcd, "_mSm130");
 
-  book_histograms(ctx, "hotvr", pTs, is_qcd, "_Nsub3");
+
+  for (auto selection:selections){
+    book_histograms(ctx, "hotvr", pTs, is_qcd, selection);
+    book_histograms(ctx, "matched", pTs, is_qcd, selection);
+  }
 
   // book_histograms(ctx, "hotvr", pTs, is_qcd, "_Nsubeq2");
   // book_histograms(ctx, "hotvr", pTs, is_qcd, "_Nsubeq3");
   // book_histograms(ctx, "hotvr", pTs, is_qcd, "_Nsub4");
 
-  book_histograms(ctx, "hotvr", pTs, is_qcd, "_fpt");
-  book_histograms(ctx, "hotvr", pTs, is_qcd, "_mass");
 
+  book_histograms(ctx, "parton", pTs, is_qcd, "");
   book_histograms(ctx, "matched", pTs, is_qcd, "");
 
   // book_histograms(ctx, "matched", pTs, is_qcd, "_Nsub3");
@@ -193,7 +199,6 @@ HOTVRStudiesModule::HOTVRStudiesModule(Context & ctx){
 
   for (auto particle:particles){
     book_histograms(ctx, "hotvr", pTs, is_qcd, "_mass","_"+particle);
-    book_histograms(ctx, "matched", pTs, is_qcd, "","_"+particle); // not yet filled since matching needs to be implemented for W, H, Z
     book_histograms(ctx, "tagged", pTs, is_qcd, "","_"+particle);  // not yet filled since matching needs to be implemented for W, H, Z
     book_histograms(ctx, "tagged", pTs, is_qcd, "_tau21","_"+particle);  // not yet filled since matching needs to be implemented for W, H, Z
 
@@ -296,6 +301,9 @@ bool HOTVRStudiesModule::process(Event & event)
   clustering->cluster_parton_jets(pj_final_state_partons, EventType); // todo: define the final state with the PDG ID
   parton_jets = clustering->get_parton_jets();
 
+  for(auto parton_jet:parton_jets)   fill_histograms(event, parton_jet, parton_jet, "parton","");
+  HFolder("hist_parton_jets")->fill_n_jets(event, parton_jets);
+
   if (debug){
     std::cout << "Number of parton jets: " << parton_jets.size() << std::endl;
     for (auto jet : parton_jets){
@@ -333,7 +341,6 @@ bool HOTVRStudiesModule::process(Event & event)
 
     // fill hists for jets with == 2 subjets
     // if (jet.subjets().size()==2) { fill_histograms(event, jet, jet, "hotvr","Nsubeq2"); }
-
 
     // fill hists after Nsub3 cut
     //   if (jet.subjets().size()==3) { fill_histograms(event, jet, jet, "hotvr","Nsubeq3");}
@@ -373,7 +380,7 @@ bool HOTVRStudiesModule::process(Event & event)
   }
 
   hist_njets_matched->fill_n_jets(event, matched_jets);
-
+  HFolder("hist_matched_jets")->fill_n_jets(event, matched_jets);
   vector<TopJet> matched_jets_tagged;
   vector<pair<TopJet, TopJet>> matched_pair_tagged;
 
@@ -382,15 +389,18 @@ bool HOTVRStudiesModule::process(Event & event)
     TopJet matched_jet=matched_pair[j].first;
 
     //fill hists with matched jets
+
     fill_histograms(event, matched_jet, parton_jet, "matched","");
+
     if (debug){
       std::cout << "Matched pair " << j << ":" << std::endl;
       std::cout << "parton pt = " << parton_jet.pt() << ", matched HOTVR jet pt = " << matched_jet.pt() << std::endl;
 
     }
 
-    // if(matched_jet.subjets().size()>2){ fill_histograms(event, matched_jet, parton_jet, "matched","_Nsub3");}
-    // if(matched_jet.hotvr_fpt1()<0.8){ fill_histograms(event, matched_jet, parton_jet, "matched","_fpt");}
+    if(matched_jet.subjets().size()>2){ fill_histograms(event, matched_jet, parton_jet, "matched","_Nsub3");}
+    if(matched_jet.subjets().size()>2 && matched_jet.hotvr_fpt1()<0.8){ fill_histograms(event, matched_jet, parton_jet, "matched","_fpt");}
+    if(matched_jet.subjets().size()>2 && 140<matched_jet.v4().M() &&matched_jet.v4().M()<220){ fill_histograms(event, matched_jet, parton_jet, "matched","_mass");}
 
     // --------apply Top Tag-----------------
     if(toptagger->Is_tagged("sd", matched_jets[j])){
@@ -400,12 +410,29 @@ bool HOTVRStudiesModule::process(Event & event)
       // fill hists with tagged jets
       double tau32 = matched_jet.tau3_groomed()/matched_jet.tau2_groomed();
 
+
       fill_histograms(event, matched_jet, parton_jet, "tagged","");
       if(tau32<0.4) fill_histograms(event, matched_jet, parton_jet, "tagged","_tau32");
 
     } // end if top tag
-  } // end loop over matched jets
+    else{
+      for(auto particle:particles){
+	if(toptagger->Is_tagged(particle, matched_jets[j])){
+	  matched_jets_tagged.push_back(matched_jet);
+	  matched_pair_tagged.push_back(matched_pair[j]);
+	  
+	  // fill hists with tagged jets
+	  double tau21 = matched_jet.tau2_groomed()/matched_jet.tau1_groomed();
+	  
+	  fill_histograms(event, matched_jet, parton_jet, "tagged","","_"+particle);
+	  if(tau21<0.4) fill_histograms(event, matched_jet, parton_jet, "tagged","_tau21","_"+particle);
+	}
+      }
+    }
 
+
+  } // end loop over matched jets
+  HFolder("hist_tagged_jets")->fill_n_jets(event, matched_jets_tagged);
   //set the event handle  these jets are the matched TopJets
   //  event.set(h_matched_parton_jets, matched_parton_jets);
   //  event.set(h_matched_jets, matched_jets);
