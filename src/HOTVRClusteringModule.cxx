@@ -238,10 +238,10 @@ bool HOTVRClusteringModule::process(Event & event) {
 
   // cluster and get the clustered parton jets (AK10 jets)
   clustering->cluster_parton_jets(parton_pseudojets, isTTbar);
-  parton_jets = clustering->get_parton_jets();
+  parton_jets = clustering->get_parton_pseudojets();
   //get the topjets from the Clustering
   _top_hotvr_jets=clustering->get_top_hotvr_jets();
-  _top_parton_jets=clustering->get_top_parton_jets();
+  _top_parton_jets=clustering->get_parton_jets();
 
 //fill hists with hotvr jets and corresponding rejected subjets
   hist_hotvr_jets->fill_n_jets(event, _top_hotvr_jets);

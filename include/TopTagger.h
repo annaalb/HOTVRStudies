@@ -22,5 +22,5 @@ public:
   TopTagger();
   bool Is_tagged(std::string tagger, TopJet &jet);
   bool Is_tagged(std::string tagger, fastjet::PseudoJet &jet);
-
+  bool Is_particle_mass(double mjet, std::string particle);
 };

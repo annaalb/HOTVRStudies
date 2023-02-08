@@ -128,7 +128,7 @@ bool HOTVRStudiesMLModule::process(Event & event) {
   jets_constituents = clustering->get_clustered_jet_constituents();
   // cluster and get the clustered parton jets (AK10 jets)
   clustering->cluster_parton_jets(parton_pseudojets, isTTbar);
-  parton_jets = clustering->get_parton_jets();
+  parton_jets = clustering->get_parton_pseudojets();
   matching->run_matching(jets, jets_constituents, parton_jets); // match the clustered jets to parton level jets
   vector<pair<PseudoJet, vector<PseudoJet>>> matched_jets_and_constituents = matching->get_matched_jets_and_constituents();
   vector<vector<double>> jets_constituents_px;
