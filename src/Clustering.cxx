@@ -121,7 +121,9 @@ void Clustering::cluster_HOTVR_SD_jets(vector<PseudoJet> pseudojets, int nevent)
   bool ghost = false;
   if(ghost){pseudojets_to_cluster = add_ghosts(pseudojets);}
 
-  HOTVR hotvr_plugin(_beta, _z_cut, _pt_threshold, _min_r, _max_r, _rho, _subjetptmin, _mu, HOTVR::CALIKE, _alpha, _a, _b, _c); // initialize plugin
+  //HOTVR hotvr_plugin(_beta, _z_cut, _pt_threshold, _min_r, _max_r, _rho, _subjetptmin, _mu, HOTVR::CALIKE, _alpha, _a, _b, _c); // initialize plugin
+  HOTVR hotvr_plugin(_beta, _z_cut, _pt_threshold, _min_r, _max_r, _rho, _subjetptmin, _mu, HOTVR::CALIKE, _alpha); // initialize plugin
+
   hotvr_plugin.set_jetptmin(_jetptmin);
   JetDefinition jet_def(&hotvr_plugin); // set up jet definition and cluster sequence
 
