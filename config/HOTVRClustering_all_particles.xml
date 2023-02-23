@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE JobConfiguration PUBLIC "" "JobConfig.dtd"[
 
-<!ENTITY PRESELdir       "/nfs/dust/cms/user/albrecha/uhh2_102X_v2/HOTVRStudiesOutput/root/paper_jet_collections/HOTVR_SD_all">
+<!ENTITY PRESELdir       "/nfs/dust/cms/user/albrecha/uhh2_102X_v2/HOTVRStudiesOutput/root/paper_jet_collections/HOTVR_SD_all_ptsub0/HISTS">
 <!--
 <!ENTITY PRESELdir       "/nfs/dust/cms/user/albrecha/uhh2_102X_v2/HOTVRStudiesOutput/root/paper_jet_collections/HOTVR_SD_fancy_R_grooming_fix_mass">
 <!ENTITY PRESELdir       "/nfs/dust/cms/user/albrecha/uhh2_102X_v2/HOTVRStudiesOutput/root/paper_jet_collections/HOTVR_SD_fancy_R">
@@ -91,7 +91,7 @@
 	    <Item Name="GenParticleCollection" Value="GenParticles" />
 
       <!-- the class name of the AnalysisModule subclasses to run: -->
-      <Item Name="AnalysisModule" Value="HOTVRClusteringModule" />
+      <Item Name="AnalysisModule" Value="HOTVRStudiesModule" />
 
       <!-- 	tell AnalysisModuleRunner NOT to use the MC event weight from SFrame; rather let
           	MCLumiWeight (called via CommonModules) calculate the MC event weight. The MC

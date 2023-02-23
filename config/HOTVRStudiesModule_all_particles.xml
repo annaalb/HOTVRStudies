@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE JobConfiguration PUBLIC "" "JobConfig.dtd"[
 
-		<!ENTITY INdir       "/nfs/dust/cms/user/albrecha/uhh2_102X_v2/HOTVRStudiesOutput/root/paper_jet_collections/HOTVR_SD_all">
-		<!ENTITY PRESELdir       "/nfs/dust/cms/user/albrecha/uhh2_102X_v2/HOTVRStudiesOutput/root/paper_jet_collections/HOTVR_SD_all/HISTS">
+		<!ENTITY INdir       "/nfs/dust/cms/user/albrecha/uhh2_102X_v2/HOTVRStudiesOutput/root/paper_jet_collections/HOTVR_SD_all_ptsub0">
+		<!ENTITY PRESELdir       "/nfs/dust/cms/user/albrecha/uhh2_102X_v2/HOTVRStudiesOutput/root/paper_jet_collections/HOTVR_SD_all_ptsub0/HISTS">
 	  <!ENTITY b_Cacheable     "False">
-	  <!ENTITY NEVT            "-1">
+	  <!ENTITY NEVT            "1">
 
           <!--QCD files-->
 	  <!ENTITY QCD_flat_prod1 "&INdir;/uhh2.AnalysisModuleRunner.MC.QCD_flat_prod1.root">
